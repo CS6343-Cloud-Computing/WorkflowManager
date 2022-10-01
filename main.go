@@ -37,30 +37,28 @@ func main(){
 	}
 
 	fmt.Println("worker: %v",w)
-	w.CollectionStats
-	w.RunTask
-	w.StartTask
-	w.StopTask
+	w.CollectionStats()
+	w.RunTask()
+	w.StartTask()
+	w.StopTask()
 
 	m:=	manager.Manager{
 			Pending:	*queue.New(),
 			TaskDb:	make(map[string][]task.Task),
 			EventDb:	make(map[string][]task.TaskEvent),
-			Workers:	[]string(w.Name),
+			Workers:	[]string{w.Name},
 	}
 
 	fmt.Println("manager: %v", m)
-	m.SelectWorker
-	m.UpdateTasks
-	m.SendWork
+	m.SelectWorker()
+	m.UpdateTasks()
+	m.SendWork()
 
 	n:= node.Node{
 		Name: "Node-1",
 		Ip:	"192.168.1.1",
-		Cores:	4,
 		Memory:	1024,
 		Disk:	25,
-		Role:	"worker",
 	}
 
 	fmt.Println("node: %v",n)
