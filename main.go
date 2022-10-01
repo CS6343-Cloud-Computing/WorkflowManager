@@ -1,10 +1,10 @@
 package main
 
 import (
-	"wfm/node"
-	"wfm/task"
-	"github.com/CS6343-Cloud-Computing/WorkflowManager/manager"
-	"wfm/worker"
+	"github.com/CS6343-Cloud-Computing/WorkflowManager/Node"
+	"github.com/CS6343-Cloud-Computing/WorkflowManager/Task"
+	"github.com/CS6343-Cloud-Computing/WorkflowManager/Manager"
+	"github.com/CS6343-Cloud-Computing/WorkflowManager/Worker"
 	"fmt"
 	"time"
 

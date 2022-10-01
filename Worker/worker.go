@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"github.com/CS6343-Cloud-Computing/WorkflowManager/Task"
 	"github.com/google/uuid"
 	"github.com/golang-collections/collections/queue"
 )
