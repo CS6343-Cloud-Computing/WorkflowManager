@@ -9,7 +9,7 @@ import (
 
 type Worker struct{
 	Queue queue.Queue
-	Db map[uuid.UUID]Task
+	Db map[uuid.UUID]task.Task
 	TaskCount int
 }
 
