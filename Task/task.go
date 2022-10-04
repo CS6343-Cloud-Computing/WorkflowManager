@@ -102,5 +102,48 @@ func (d *Docker) Run() DockerResult{
 		log.Printf("Error starting container using image %s: %v \n", resp.ID, err)
 		return DockerResult{Error:err}
 	}
+
+	d.ContainerId = resp.ID
+	out, err := d.Client.ContainerLogs(ctx, resp.ID,
+	                              types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
+
+	if err != null {
+	    log.Printf("Error getting logs for container %s: %v\n", resp.ID
+	    return DockerResult{Error: err})
+	}
+
+	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
+
+	return DockerResult{
+	    ContainerId: resp.ID,
+	    Action: "start",
+	    Result: "success"
+	}
+}
+
+func (d *Docker) Stop() DockerResult {
+	ctx := context.Background()
+	log.Printf(
+		"Attempting to stop container %v", d.ContainerId)
+	err := d.Client.ContainerStop(ctx, d.ContainerId, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	removeOptions := types.ContainerRemoveOptions{
+		RemoveVolumes: true,
+		RemoveLinks:   false,
+		Force:         false,
+	}
+
+	err = d.Client.ContainerRemove(
+		ctx,
+		d.ContainerId,
+		removeOptions,
+	)
+	if err != nil {
+		panic(err)
+	}
+	return DockerResult{Action: "stop", Result: "success", Error: nil}
 }
 
