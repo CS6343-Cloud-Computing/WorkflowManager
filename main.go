@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/docker/docker/client"
 	manager "github.com/CS6343-Cloud-Computing/WorkflowManager/Manager"
 	node "github.com/CS6343-Cloud-Computing/WorkflowManager/Node"
 	task "github.com/CS6343-Cloud-Computing/WorkflowManager/Task"

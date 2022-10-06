@@ -1,9 +1,18 @@
 package task
 
 import (
-	"github.com/google/uuid"
-	"github.com/docker/go-connections/nat"
+	"context"
+	"io"
+	"log"
+	"os"
 	"time"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/go-connections/nat"
+	"github.com/google/uuid"
 )
 
 type State int
@@ -64,11 +73,11 @@ type DockerResult struct{
 }
 
 func (d *Docker) Run() DockerResult{
-	ctx := context.Backgroud()
+	ctx := context.Background()
 	reader,err := d.Client.ImagePull(ctx, d.Config.Image, types.ImagePullOptions{})
 	if err != nil {
 		log.Printf("Error pulling the image %s: %v \n", d.Config.Image, err)
-		return DockerResult(Error: err)
+		return DockerResult{Error: err}
 	}
 	io.Copy(os.Stdout, reader)
 
@@ -97,9 +106,9 @@ func (d *Docker) Run() DockerResult{
 		return DockerResult{Error:err}
 	}
 
-	err := d.Client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-	if err != nil {
-		log.Printf("Error starting container using image %s: %v \n", resp.ID, err)
+	err2 := d.Client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+	if err2 != nil {
+		log.Printf("Error starting container using image %s: %v \n", resp.ID, err2)
 		return DockerResult{Error:err}
 	}
 
@@ -107,9 +116,9 @@ func (d *Docker) Run() DockerResult{
 	out, err := d.Client.ContainerLogs(ctx, resp.ID,
 	                              types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 
-	if err != null {
-	    log.Printf("Error getting logs for container %s: %v\n", resp.ID
-	    return DockerResult{Error: err})
+	if err != nil {
+	    log.Printf("Error getting logs for container %s: %v\n", resp.ID,err)
+	    return DockerResult{Error:err}
 	}
 
 	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
@@ -117,7 +126,7 @@ func (d *Docker) Run() DockerResult{
 	return DockerResult{
 	    ContainerId: resp.ID,
 	    Action: "start",
-	    Result: "success"
+	    Result: "success",
 	}
 }
 
