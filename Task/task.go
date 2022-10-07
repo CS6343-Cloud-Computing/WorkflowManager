@@ -205,6 +205,8 @@ func NewConfig(task *Task) Config{
 
 func NewDocker(config Config) *Docker{
 	d := new(Docker)
+	dc, _ := client.NewClientWithOpts(client.FromEnv)
+	d.Client = dc
 	d.Config = config
 	return d
 }

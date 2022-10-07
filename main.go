@@ -17,7 +17,7 @@ import (
 
 func main() {
 	c := task.Config{
-		Name:  "test-container-1",
+		Name:  "test-container-2",
 		Image: "postgres:13",
 		Env: []string{
 			"POSTGRES_USER=cube",
@@ -56,11 +56,13 @@ func main() {
 	fmt.Println("starting task")
 	w.AddTask(t)
 	fmt.Println("Before run task")
+	
 	result := w.RunTask()
 
     if result.Error != nil {
         panic(result.Error)
     }
+	
 	w.CollectionStats()
 	fmt.Println("After run task")
 
@@ -101,7 +103,7 @@ func main() {
 
 func createContainer() (*task.Docker, *task.DockerResult) {
 	c := task.Config{
-		Name:  "test-container-1",
+		Name:  "test-container-5",
 		Image: "postgres:13",
 		Env: []string{
 			"POSTGRES_USER=cube",
