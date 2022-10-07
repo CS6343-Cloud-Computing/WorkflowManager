@@ -16,14 +16,26 @@ import (
 )
 
 func main() {
+	c := task.Config{
+		Name:  "test-container-1",
+		Image: "postgres:13",
+		Env: []string{
+			"POSTGRES_USER=cube",
+			"POSTGRES_PASSWORD=secret",
+		},
+	}
+
 	t := task.Task{
 		ID:     uuid.New(),
 		Name:   "Task-1",
-		State:  task.Pending,
+		State:  task.Scheduled,
 		Image:  "Image-1",
 		Memory: 1024,
 		Disk:   1,
+		Config: c,
 	}
+
+	db := make(map[uuid.UUID]task.Task)
 
 	te := task.TaskEvent{
 		ID:        uuid.New(),
@@ -32,18 +44,28 @@ func main() {
 		Task:      t,
 	}
 
-	fmt.Println("task: %v", t)
-	fmt.Println("task event: %v", te)
+	fmt.Println("task: ", t)
+	fmt.Println("task event: ", te)
+	
 	w := worker.Worker{
 		Queue: *queue.New(),
-		Db:    make(map[uuid.UUID]task.Task),
+		Db:    db,
 	}
+	fmt.Println("worker: ", w)
 
-	fmt.Println("worker: %v", w)
+	fmt.Println("starting task")
+	w.AddTask(t)
+	fmt.Println("Before run task")
+	result := w.RunTask()
+
+    if result.Error != nil {
+        panic(result.Error)
+    }
 	w.CollectionStats()
-	w.RunTask()
-	w.StartTask()
-	w.StopTask()
+	fmt.Println("After run task")
+
+	w.StartTask(t)
+	w.StopTask(t)
 
 	m := manager.Manager{
 		Pending: *queue.New(),
@@ -52,7 +74,7 @@ func main() {
 		Workers: []string{w.Name},
 	}
 
-	fmt.Println("manager: %v", m)
+	fmt.Println("manager: ", m)
 	m.SelectWorker()
 	m.UpdateTasks()
 	m.SendWork()
@@ -64,7 +86,7 @@ func main() {
 		Disk:   25,
 	}
 
-	fmt.Println("node: %v", n)
+	fmt.Println("node: ", n)
 
 	fmt.Printf("create a test container\n")
 	dockerTask, createResult := createContainer()
@@ -86,7 +108,7 @@ func createContainer() (*task.Docker, *task.DockerResult) {
 			"POSTGRES_PASSWORD=secret",
 		},
 	}
-
+	
 	dc, _ := client.NewClientWithOpts(client.FromEnv)
 	d := task.Docker{
 		Client: dc,

@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -25,27 +26,6 @@ const (
 	Failed
 )
 
-type Task struct {
-	ID	uuid.UUID
-	Name	string
-	State	State
-	Image	string
-	Memory	int
-	Disk	int
-	ExposedPorts	nat.PortSet
-	PortBindings	map[string]string
-	RestartPolicy	string
-	StartTime	time.Time
-	FinishTime	time.Time
-}
-
-type TaskEvent struct {
-	ID	uuid.UUID
-	State	State
-	Timestamp time.Time
-	Task Task
-}
-
 type Config struct{
 	Name string
 	AttachStdin bool
@@ -57,6 +37,29 @@ type Config struct{
 	Disk int64
 	Env []string
 	RestartPolicy string
+}
+
+type Task struct {
+	ID	uuid.UUID
+	ContainerId	string
+	Name	string
+	State	State
+	Image	string
+	Memory	int
+	Disk	int
+	ExposedPorts	nat.PortSet
+	PortBindings	map[string]string
+	RestartPolicy	string
+	StartTime	time.Time
+	FinishTime	time.Time
+	Config	Config
+}
+
+type TaskEvent struct {
+	ID	uuid.UUID
+	State	State
+	Timestamp time.Time
+	Task Task
 }
 
 type Docker struct{
@@ -74,25 +77,39 @@ type DockerResult struct{
 
 func (d *Docker) Run() DockerResult{
 	ctx := context.Background()
+	fmt.Println("reached 12 " )
+
 	reader,err := d.Client.ImagePull(ctx, d.Config.Image, types.ImagePullOptions{})
+
 	if err != nil {
 		log.Printf("Error pulling the image %s: %v \n", d.Config.Image, err)
 		return DockerResult{Error: err}
 	}
+
+	fmt.Println("reached 14 ")
+
 	io.Copy(os.Stdout, reader)
+
+	fmt.Println("reached 15 ")
 
 	rp := container.RestartPolicy{
 			Name: d.Config.RestartPolicy,
 	}
 	
+	fmt.Println("reached 16 ")
+
 	r := container.Resources{
 			Memory: d.Config.Memory,
 	}
+
+	fmt.Println("reached 17 ")
 
 	cc := container.Config{
 			Image: d.Config.Image,
 			Env: d.Config.Env,
 	}
+
+	fmt.Println("reached 18 ")
 
 	hc := container.HostConfig{
 			RestartPolicy: rp,
@@ -100,11 +117,15 @@ func (d *Docker) Run() DockerResult{
 			PublishAllPorts: true,
 	}
 
+	fmt.Println("reached 19 ")
+
 	resp, err := d.Client.ContainerCreate(ctx, &cc, &hc, nil, nil, d.Config.Name)
 	if err != nil {
 		log.Printf("Error creating container using image %s: %v \n", d.Config.Image, err)
 		return DockerResult{Error:err}
 	}
+
+	fmt.Println("reached 20 ")
 
 	err2 := d.Client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 	if err2 != nil {
@@ -155,4 +176,37 @@ func (d *Docker) Stop() DockerResult {
 	}
 	return DockerResult{Action: "stop", Result: "success", Error: nil}
 }
+
+var stateTransitionMap = map[State][]State{
+	Pending: {Scheduled},
+	Scheduled: {Scheduled, Running, Failed},
+	Running:	{Running, Completed, Failed},
+	Completed:	{},
+	Failed:	{},
+}
+
+func Contains(states []State, state State) bool{
+	for _,s := range states{
+		if s== state{
+			return true
+		}
+	}
+	return false
+}
+
+func ValidStateTransition(src State, dst State) bool {
+	return Contains(stateTransitionMap[src],dst)
+}
+
+func NewConfig(task *Task) Config{
+	config := &task.Config
+	return *config;
+}
+
+func NewDocker(config Config) *Docker{
+	d := new(Docker)
+	d.Config = config
+	return d
+}
+
 
