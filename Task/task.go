@@ -77,8 +77,6 @@ type DockerResult struct{
 
 func (d *Docker) Run() DockerResult{
 	ctx := context.Background()
-	fmt.Println("reached 12 " )
-
 	reader,err := d.Client.ImagePull(ctx, d.Config.Image, types.ImagePullOptions{})
 
 	if err != nil {
@@ -86,30 +84,19 @@ func (d *Docker) Run() DockerResult{
 		return DockerResult{Error: err}
 	}
 
-	fmt.Println("reached 14 ")
-
 	io.Copy(os.Stdout, reader)
-
-	fmt.Println("reached 15 ")
-
 	rp := container.RestartPolicy{
 			Name: d.Config.RestartPolicy,
 	}
-	
-	fmt.Println("reached 16 ")
 
 	r := container.Resources{
 			Memory: d.Config.Memory,
 	}
 
-	fmt.Println("reached 17 ")
-
 	cc := container.Config{
 			Image: d.Config.Image,
 			Env: d.Config.Env,
 	}
-
-	fmt.Println("reached 18 ")
 
 	hc := container.HostConfig{
 			RestartPolicy: rp,
@@ -117,15 +104,11 @@ func (d *Docker) Run() DockerResult{
 			PublishAllPorts: true,
 	}
 
-	fmt.Println("reached 19 ")
-
 	resp, err := d.Client.ContainerCreate(ctx, &cc, &hc, nil, nil, d.Config.Name)
 	if err != nil {
 		log.Printf("Error creating container using image %s: %v \n", d.Config.Image, err)
 		return DockerResult{Error:err}
 	}
-
-	fmt.Println("reached 20 ")
 
 	err2 := d.Client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 	if err2 != nil {
