@@ -7,11 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	//manager "github.com/CS6343-Cloud-Computing/WorkflowManager/Manager"
-	//node "github.com/CS6343-Cloud-Computing/WorkflowManager/Node"
 	task "github.com/CS6343-Cloud-Computing/WorkflowManager/Task"
 	worker "github.com/CS6343-Cloud-Computing/WorkflowManager/Worker"
-	//"github.com/docker/docker/client"
 
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
@@ -32,6 +29,7 @@ func main() {
 	api := worker.Api{Address: host, Port: port, Worker: &w}
 
 	go runTasks(&w)
+	go w.CollectStats()
 	api.Start()
 }
 

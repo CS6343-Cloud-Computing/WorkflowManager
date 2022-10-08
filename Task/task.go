@@ -44,6 +44,7 @@ type Task struct {
 	Name	string
 	State	State
 	Image	string
+	Cpu	float64
 	Memory	int
 	Disk	int
 	ExposedPorts	nat.PortSet

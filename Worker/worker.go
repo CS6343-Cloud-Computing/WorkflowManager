@@ -17,6 +17,7 @@ type Worker struct{
 	Queue queue.Queue
 	Db map[uuid.UUID]task.Task
 	TaskCount int
+	Stats Stats
 }
 
 func(w *Worker) CollectionStats(){
@@ -99,4 +100,12 @@ func(w *Worker) GetTasks() []byte{
 		log.Printf("Error marshalling the queue\n")
 	}
 	return jsonStr
+}
+
+func (w *Worker) CollectStats() {
+	for {
+		log.Println("Collecting stats")
+		w.Stats = *GetStats()
+		time.Sleep(15 * time.Second)
+	}
 }
