@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -29,6 +30,7 @@ func (w *Worker) RunTask() task.DockerResult {
 			return task.DockerResult{Error: nil}
 	}
 	taskQueued := t.(task.Task)
+	log.Println("")
 	taskPersisted,isPresent := w.Db[taskQueued.ID]
 
 	if !isPresent  {
@@ -89,4 +91,12 @@ func(w * Worker) StopTask(t task.Task) task.DockerResult{
 
 func(w *Worker) AddTask(t task.Task){
 	w.Queue.Enqueue(t)
+}
+
+func(w *Worker) GetTasks() []byte{
+	jsonStr, err := json.Marshal(w.Db)
+	if err != nil {
+		log.Printf("Error marshalling the queue\n")
+	}
+	return jsonStr
 }
