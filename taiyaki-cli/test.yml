@@ -1,0 +1,20 @@
+main:
+  steps:
+    - name: "first_step"
+      image: "nginx"
+      cmd:
+        - "sudo test"
+        - "sudo run"
+      env:
+        - "TEST1=123"
+        - "TEST2=abcd"
+      autoremove: true
+    - name: "second_step"
+      image: "nginx"
+      cmd:
+        - "sudo test"
+        - "sudo run"
+      env:
+        - "TEST1=123"
+        - "TEST2=abcd"
+      autoremove: false
