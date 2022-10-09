@@ -1,19 +1,31 @@
-package main
+package apiserver
 
 import (
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
+	workerController "taiyaki-server/controllers"
 	"time"
-	"gopkg.in/yaml.v3"
+
 	"github.com/gorilla/mux"
+	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
 )
 
-type Api struct {
-	ServerIP   string
-	ServerPort string
+//Resp - Generic response
+type Resp struct {
+	Result  string `json:"result"`
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
+}
+
+type APIConfig struct {
+	ServerIP      string
+	ServerPort    string
+	WorkerJoinKey string
 }
 
 type WorkflowTemplate struct {
@@ -22,11 +34,11 @@ type WorkflowTemplate struct {
 	}
 }
 
-type StepItem struct{
-	Name string
-	Image string
-	Cmd []string
-	Env []string
+type StepItem struct {
+	Name       string
+	Image      string
+	Cmd        []string
+	Env        []string
 	Autoremove bool
 }
 
@@ -36,11 +48,11 @@ func UnHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("UnHandler: It worked but the route is not found!!!\n"))
 }
 
-func serverStatusHandler(w http.ResponseWriter, r *http.Request){
+func serverStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	resp := Resp{Result:"Server is running",Success: true, Error: ""}
+	resp := Resp{Result: "Server is running", Success: true, Error: ""}
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -57,23 +69,31 @@ func workflowHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	resp := Resp{"Successfully got the workflow",true, ""}
+	resp := Resp{"Successfully got the workflow", true, ""}
 	json.NewEncoder(w).Encode(resp)
 }
 
-func (a Api) start(wg *sync.WaitGroup) {
+func nodeJoinHandler(w http.ResponseWriter, r *http.Request, worker *workerController.WorkerRepo) {
+	fmt.Println(worker)
+}
+
+func (c APIConfig) Start(wg *sync.WaitGroup, db *gorm.DB) {
+	workerCntrl := workerController.NewWorker(db)
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", UnHandler)
 	router.HandleFunc("/server", UnHandler)
 	router.HandleFunc("/workflow", UnHandler)
+	router.HandleFunc("/node", UnHandler)
 	router.HandleFunc("/server/status", serverStatusHandler)
 	router.HandleFunc("/workflow/submit", workflowHandler)
+	router.HandleFunc("/node/join", func(w http.ResponseWriter, r *http.Request) { nodeJoinHandler(w, r, workerCntrl) })
 	srv := &http.Server{
-		Handler: router,
-		Addr:    a.ServerIP + ":" + a.ServerPort,
+		Handler:      router,
+		Addr:         c.ServerIP + ":" + c.ServerPort,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	fmt.Println("Listening on", c.ServerIP+":"+c.ServerPort)
 	log.Fatal(srv.ListenAndServe())
 	wg.Done()
 }
