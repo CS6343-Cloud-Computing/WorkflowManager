@@ -23,6 +23,7 @@ func UnHandler(w http.ResponseWriter, r *http.Request) {
 func (a Api) start(wg *sync.WaitGroup) {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", UnHandler)
+	router.HandleFunc("/server", UnHandler)
 	srv := &http.Server{
 		Handler: router,
 		Addr:    a.ServerIP + ":" + a.ServerPort,
