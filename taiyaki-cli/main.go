@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-
 	"github.com/urfave/cli/v2"
 )
 
