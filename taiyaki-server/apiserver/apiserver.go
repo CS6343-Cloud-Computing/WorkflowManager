@@ -8,13 +8,16 @@ import (
 	"net/http"
 	"sync"
 	workerController "taiyaki-server/controllers"
+	"taiyaki-server/models"
 
 	"time"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/yaml.v3"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
+
 
 type NodeJoinReq struct {
 	NodeIP   string
@@ -103,7 +106,7 @@ func nodeJoinHandler(w http.ResponseWriter, r *http.Request, worker *workerContr
 		return
 	}
 
-	//Check if worker exist and if it has an active or maintenance status
+	//Check if worker exist or not
 	workerNode, valid := worker.GetWorker(joinReq.NodeIP)
 
 	if valid {
@@ -112,7 +115,11 @@ func nodeJoinHandler(w http.ResponseWriter, r *http.Request, worker *workerContr
 		return
 	}
 
+	workerNode = models.Worker{WorkerIP: joinReq.NodeIP, WorkerPort: joinReq.NodePort, WorkerKey: joinReq.JoinKey, Containers: datatypes.JSON{}, Status: "active"}
+
 	fmt.Println(workerNode)
+
+	worker.CreateWorker(workerNode)
 
 }
 

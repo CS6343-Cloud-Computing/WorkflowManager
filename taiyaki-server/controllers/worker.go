@@ -15,9 +15,7 @@ func NewWorker(db * gorm.DB) *WorkerRepo {
 }
 
 //create user
-func (repo *WorkerRepo) CreateWorker() {
-	var worker models.Worker
-	// fill worker
+func (repo *WorkerRepo) CreateWorker(worker models.Worker) {
 	err := models.CreateWorker(repo.Db, &worker)
 	if err != nil {
 		panic(err)

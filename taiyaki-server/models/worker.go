@@ -7,12 +7,12 @@ import (
 
 type Worker struct {
 	gorm.Model
-	ID         int            `json:",omitempty"`
-	WorkerIP   string         `json:",omitempty"`
-	WorkerPort string         `json:",omitempty"`
-	WorkerKey  string         `json:",omitempty"`
-	Containers datatypes.JSON `json:",omitempty"`
-	Status     string         `json:",omitempty"`
+	ID         int
+	WorkerIP   string
+	WorkerPort string
+	WorkerKey  string
+	Containers datatypes.JSON
+	Status     string
 }
 
 //create a worker
