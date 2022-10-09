@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+
 	"github.com/urfave/cli/v2"
 )
 
@@ -48,22 +49,6 @@ func main() {
 						Usage: "Check the status of the workflow manager",
 						Action: func(cCtx *cli.Context) error {
 							fmt.Println("Status of the Workflow Manager: ", cCtx.Args().First())
-							return nil
-						},
-					},
-					{
-						Name:  "start",
-						Usage: "Start the Workflow Manager",
-						Action: func(cCtx *cli.Context) error {
-							fmt.Println("Starting the workflow manager: ", cCtx.Args().First())
-							return nil
-						},
-					},
-					{
-						Name:  "stop",
-						Usage: "Stop the Workflow Manager",
-						Action: func(cCtx *cli.Context) error {
-							fmt.Println("Stop the workflow manager: ", cCtx.Args().First())
 							return nil
 						},
 					},
