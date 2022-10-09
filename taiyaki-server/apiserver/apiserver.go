@@ -8,12 +8,19 @@ import (
 	"net/http"
 	"sync"
 	workerController "taiyaki-server/controllers"
+
 	"time"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
+
+type NodeJoinReq struct {
+	NodeIP   string
+	NodePort string
+	JoinKey  string
+}
 
 //Resp - Generic response
 type Resp struct {
@@ -69,12 +76,44 @@ func workflowHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	if len(workflow.Main.Steps) == 0 {
+		resp := Resp{"Empty workflow", true, ""}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
 	resp := Resp{"Successfully got the workflow", true, ""}
 	json.NewEncoder(w).Encode(resp)
 }
 
-func nodeJoinHandler(w http.ResponseWriter, r *http.Request, worker *workerController.WorkerRepo) {
-	fmt.Println(worker)
+func nodeJoinHandler(w http.ResponseWriter, r *http.Request, worker *workerController.WorkerRepo, config APIConfig) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	defer r.Body.Close()
+
+	joinReq := NodeJoinReq{}
+	json.NewDecoder(r.Body).Decode(&joinReq)
+
+	//Verify key
+	if joinReq.JoinKey != config.WorkerJoinKey {
+		fmt.Println(config.WorkerJoinKey)
+		fmt.Println(joinReq.JoinKey)
+		resp := Resp{Success: false, Error: "Invalid join key"}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	//Check if worker exist and if it has an active or maintenance status
+	workerNode, valid := worker.GetWorker(joinReq.NodeIP)
+
+	if valid {
+		resp := Resp{Success: false, Error: "This worker node has already joined the cluster"}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	fmt.Println(workerNode)
+
 }
 
 func (c APIConfig) Start(wg *sync.WaitGroup, db *gorm.DB) {
@@ -86,7 +125,7 @@ func (c APIConfig) Start(wg *sync.WaitGroup, db *gorm.DB) {
 	router.HandleFunc("/node", UnHandler)
 	router.HandleFunc("/server/status", serverStatusHandler)
 	router.HandleFunc("/workflow/submit", workflowHandler)
-	router.HandleFunc("/node/join", func(w http.ResponseWriter, r *http.Request) { nodeJoinHandler(w, r, workerCntrl) })
+	router.HandleFunc("/node/join", func(w http.ResponseWriter, r *http.Request) { nodeJoinHandler(w, r, workerCntrl, c) })
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         c.ServerIP + ":" + c.ServerPort,

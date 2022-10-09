@@ -1,18 +1,18 @@
 package models
 
 import (
-	"gorm.io/gorm"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type Worker struct {
 	gorm.Model
-	ID         int
-	WorkerIP   string
-	WorkerPort string
-	WorkerKey  string
-	Containers datatypes.JSON
-	Status     string
+	ID         int            `json:",omitempty"`
+	WorkerIP   string         `json:",omitempty"`
+	WorkerPort string         `json:",omitempty"`
+	WorkerKey  string         `json:",omitempty"`
+	Containers datatypes.JSON `json:",omitempty"`
+	Status     string         `json:",omitempty"`
 }
 
 //create a worker
@@ -34,13 +34,13 @@ func CreateWorker(db *gorm.DB, worker *Worker) (err error) {
 // }
 
 // //get user by id
-// func GetUser(db *gorm.DB, User *User, id int) (err error) {
-// 	err = db.Where("id = ?", id).First(User).Error
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+func GetWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
+	err = db.Where("worker_ip = ?", WorkerIP).First(worker).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // //update user
 // func UpdateUser(db *gorm.DB, User *User) (err error) {

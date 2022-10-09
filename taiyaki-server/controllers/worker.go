@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"taiyaki-server/models"
-
+	"errors"
 	"gorm.io/gorm"
 )
 
@@ -22,4 +22,17 @@ func (repo *WorkerRepo) CreateWorker() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+//get user by id
+func (repo *WorkerRepo) GetWorker(WorkerIP string) (models.Worker, bool){
+	var worker models.Worker
+	err := models.GetWorker(repo.Db, &worker, WorkerIP)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return worker, false
+		}
+		panic(err)
+	}
+	return worker, true
 }
