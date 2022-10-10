@@ -25,13 +25,13 @@ func CreateWorker(db *gorm.DB, worker *Worker) (err error) {
 }
 
 //get workers
-// func GetWorkers(db *gorm.DB, worker *[]Worker) (err error) {
-// 	err = db.Find(worker).Error
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+func GetWorkers(db *gorm.DB, workers *[]Worker) (err error) {
+	err = db.Find(workers).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // //get Worker by id
 func GetWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
@@ -43,13 +43,13 @@ func GetWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
 }
 
 // //update worker
-// func UpdateWorker(db *gorm.DB, Worker *Worker) (err error) {
-// 	db.Save(Worker)
-// 	return nil
-// }
+func UpdateWorker(db *gorm.DB, worker *Worker) (err error) {
+	db.Save(worker)
+	return nil
+}
 
 // //delete Worker
-// func DeleteWorker(db *gorm.DB, Worker *Worker, id int) (err error) {
-// 	db.Where("id = ?", id).Delete(Worker)
-// 	return nil
-// }
+func DeleteWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
+	db.Where("worker_ip = ?", WorkerIP).Delete(worker)
+	return nil
+}
