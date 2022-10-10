@@ -33,7 +33,7 @@ func CreateWorker(db *gorm.DB, worker *Worker) (err error) {
 // 	return nil
 // }
 
-// //get user by id
+// //get Worker by id
 func GetWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
 	err = db.Where("worker_ip = ?", WorkerIP).First(worker).Error
 	if err != nil {
@@ -42,14 +42,14 @@ func GetWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
 	return nil
 }
 
-// //update user
-// func UpdateUser(db *gorm.DB, User *User) (err error) {
-// 	db.Save(User)
+// //update worker
+// func UpdateWorker(db *gorm.DB, Worker *Worker) (err error) {
+// 	db.Save(Worker)
 // 	return nil
 // }
 
-// //delete user
-// func DeleteUser(db *gorm.DB, User *User, id int) (err error) {
-// 	db.Where("id = ?", id).Delete(User)
+// //delete Worker
+// func DeleteWorker(db *gorm.DB, Worker *Worker, id int) (err error) {
+// 	db.Where("id = ?", id).Delete(Worker)
 // 	return nil
 // }

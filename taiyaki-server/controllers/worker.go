@@ -14,7 +14,7 @@ func NewWorker(db * gorm.DB) *WorkerRepo {
 	return &WorkerRepo{Db: db}
 }
 
-//create user
+//create worker
 func (repo *WorkerRepo) CreateWorker(worker models.Worker) {
 	err := models.CreateWorker(repo.Db, &worker)
 	if err != nil {
@@ -22,7 +22,7 @@ func (repo *WorkerRepo) CreateWorker(worker models.Worker) {
 	}
 }
 
-//get user by id
+//get worker by ip address
 func (repo *WorkerRepo) GetWorker(WorkerIP string) (models.Worker, bool){
 	var worker models.Worker
 	err := models.GetWorker(repo.Db, &worker, WorkerIP)
