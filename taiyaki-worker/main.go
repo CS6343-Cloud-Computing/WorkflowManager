@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,8 +12,12 @@ import (
 	"net"
 	"net/http"
 	"os"
+	task "taiyaki-worker/task"
 
+	"github.com/golang-collections/collections/queue"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"time"
 )
 
 type NodeJoinReq struct {
@@ -20,11 +26,112 @@ type NodeJoinReq struct {
 	JoinKey  string
 }
 
+type Worker struct {
+	Name      string
+	Queue     queue.Queue
+	Db        map[uuid.UUID]task.Task
+	TaskCount int
+	Stats     Stats
+}
+
 var workerIP string
 var workerPort string
 var serverIP string
 var serverPort string
 var joinKey string
+
+func (w *Worker) CollectionStats() {
+	fmt.Println("Collect stats")
+}
+
+func (w *Worker) RunTask() task.DockerResult {
+	t := w.Queue.Dequeue()
+	if t == nil {
+		log.Println("No tasks in the queue")
+		return task.DockerResult{Error: nil}
+	}
+	taskQueued := t.(task.Task)
+	log.Println("")
+	taskPersisted, isPresent := w.Db[taskQueued.ID]
+
+	if !isPresent {
+		taskPersisted = taskQueued
+		w.Db[taskQueued.ID] = taskQueued
+	}
+
+	var result task.DockerResult
+	fmt.Println(task.ValidStateTransition(taskPersisted.State, taskQueued.State))
+	if task.ValidStateTransition(taskPersisted.State, taskQueued.State) {
+		switch taskQueued.State {
+		case task.Scheduled:
+	result = w.StartTask(taskQueued)
+	case task.Completed:
+		result = w.StopTask(taskQueued)
+	default:
+		result.Error = errors.New("we should not get here")
+	}
+	} else {
+	err := fmt.Errorf("invalid transition from %v to %v", taskPersisted.State, taskQueued.State)
+	result.Error = err
+	}
+	return result
+}
+
+func (w *Worker) StartTask(t task.Task) task.DockerResult {
+	config := task.NewConfig(&t)
+	d := task.NewDocker(config)
+	result := d.Run()
+	if result.Error != nil {
+		fmt.Printf("Error running task %v: %v\n", t.ID, result.Error)
+		t.State = task.Failed
+		w.Db[t.ID] = t
+		return result
+	}
+
+	d.ContainerId = result.ContainerId
+	t.ContainerId = result.ContainerId
+	t.State = task.Running
+	w.Db[t.ID] = t
+
+	return result
+}
+
+func (w *Worker) StopTask(t task.Task) task.DockerResult {
+	config := task.NewConfig(&t)
+	d := task.NewDocker(config)
+	d.ContainerId = t.ContainerId
+	result := d.Stop()
+	if result.Error != nil {
+		fmt.Printf("%v\n", result.Error)
+	}
+
+	t.FinishTime = time.Now().UTC()
+	t.State = task.Completed
+	w.Db[t.ID] = t
+	log.Printf("Stopped and removed the container %v for task %v", d.ContainerId, t)
+
+	return result
+}
+
+func (w *Worker) AddTask(t task.Task) {
+	w.Queue.Enqueue(t)
+}
+
+func (w *Worker) GetTasks() []byte {
+	jsonStr, err := json.Marshal(w.Db)
+	if err != nil {
+		log.Printf("Error marshalling the queue\n")
+	}
+	return jsonStr
+}
+
+func (w *Worker) CollectStats() {
+	for {
+		log.Println("Collecting stats")
+		w.Stats = *GetStats()
+		time.Sleep(15 * time.Second)
+	}
+}
 
 func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
 	c := &tls.Config{
@@ -48,6 +155,22 @@ func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
 	resp.Body.Close()
 
 	return resBody, nil
+}
+
+func runTasks(w *Worker) {
+	for {
+		if w.Queue.Len() != 0 {
+			result := w.RunTask()
+			if result.Error != nil {
+				log.Printf("Error running task: %v\n", result.Error)
+			}
+		} else {
+			log.Printf("No tasks to process currently.\n")
+		}
+		log.Println("Sleeping for 10 seconds.")
+		time.Sleep(10 * time.Second)
+	}
+
 }
 
 func main() {
@@ -103,5 +226,12 @@ func main() {
 		}
 	}
 
-	NodeJoin(workerIP, workerPort, serverIP, serverPort, joinKey)
+	// NodeJoin(workerIP, workerPort, serverIP, serverPort, joinKey)
+
+	worker := Worker{Queue: *queue.New(), Db: make(map[uuid.UUID]task.Task)}
+	go runTasks(&worker)
+	go worker.CollectStats()
+	api := Api{NodeIP: workerIP, NodePort: workerPort, Worker: &worker}
+
+	api.Start()
 }

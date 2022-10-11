@@ -10,10 +10,10 @@ func NodeJoin(workerIP string, workerPort string, serverIP string, serverPort st
 	fmt.Println("Joining the cluster...")
 
 	reqJoin :=  NodeJoinReq{NodeIP: workerIP, NodePort: workerPort, JoinKey: joinKey}
-	reqBuffer := new(bytes.Buffer)
-	json.NewEncoder(reqBuffer).Encode(reqJoin)
+	reqBody := new(bytes.Buffer)
+	json.NewEncoder(reqBody).Encode(reqJoin)
 
-	resp, err := reqServer("http://"+serverIP+":8080/node/join", reqBuffer)
+	resp, err := reqServer("http://"+serverIP+":8080/node/join", reqBody)
 	if err != nil {
 		panic(err)
 	}
