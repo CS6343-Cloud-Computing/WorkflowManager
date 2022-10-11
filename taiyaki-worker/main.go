@@ -14,13 +14,14 @@ import (
 	"os"
 	task "taiyaki-worker/task"
 
+	"time"
+
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"time"
 )
 
-//Resp - Generic response
+// Resp - Generic response
 type Resp struct {
 	Result  string `json:"result"`
 	Success bool   `json:"success"`

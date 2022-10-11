@@ -24,51 +24,51 @@ const (
 	Failed
 )
 
-type Config struct{
-	Name string
-	AttachStdin bool
-	AttachStdout bool
-	AttachStderr bool
-	Cmd []string
-	Image string
-	Env []string
+type Config struct {
+	Name          string
+	AttachStdin   bool
+	AttachStdout  bool
+	AttachStderr  bool
+	Cmd           []string
+	Image         string
+	Env           []string
 	RestartPolicy string
 }
 
 type Task struct {
-	ID	uuid.UUID
-	ContainerId	string
-	Name	string
-	State	State
-	RestartPolicy	string
-	StartTime	time.Time
-	FinishTime	time.Time
-	Config	Config
+	ID            uuid.UUID
+	ContainerId   string
+	Name          string
+	State         State
+	RestartPolicy string
+	StartTime     time.Time
+	FinishTime    time.Time
+	Config        Config
 }
 
 type TaskEvent struct {
-	ID	uuid.UUID
-	State	State
+	ID        uuid.UUID
+	State     State
 	Timestamp time.Time
-	Task Task
+	Task      Task
 }
 
-type Docker struct{
-	Client *client.Client
-	Task Task
+type Docker struct {
+	Client      *client.Client
+	Task        Task
 	ContainerId string
 }
 
-type DockerResult struct{
-	Error error
-	Action string
+type DockerResult struct {
+	Error       error
+	Action      string
 	ContainerId string
-	Result string
+	Result      string
 }
 
-func (d *Docker) Run() DockerResult{
+func (d *Docker) Run() DockerResult {
 	ctx := context.Background()
-	reader,err := d.Client.ImagePull(ctx, d.Task.Config.Image, types.ImagePullOptions{})
+	reader, err := d.Client.ImagePull(ctx, d.Task.Config.Image, types.ImagePullOptions{})
 
 	if err != nil {
 		log.Printf("Error pulling the image %s: %v \n", d.Task.Config.Image, err)
@@ -77,46 +77,46 @@ func (d *Docker) Run() DockerResult{
 
 	io.Copy(os.Stdout, reader)
 	rp := container.RestartPolicy{
-			Name: d.Task.Config.RestartPolicy,
+		Name: d.Task.Config.RestartPolicy,
 	}
 
 	cc := container.Config{
-			Image: d.Task.Config.Image,
-			Env: d.Task.Config.Env,
+		Image: d.Task.Config.Image,
+		Env:   d.Task.Config.Env,
 	}
 
 	hc := container.HostConfig{
-			RestartPolicy: rp,
-			PublishAllPorts: true,
+		RestartPolicy:   rp,
+		PublishAllPorts: true,
 	}
 
 	resp, err := d.Client.ContainerCreate(ctx, &cc, &hc, nil, nil, d.Task.Config.Name)
 	if err != nil {
 		log.Printf("Error creating container using image %s: %v \n", d.Task.Config.Image, err)
-		return DockerResult{Error:err}
+		return DockerResult{Error: err}
 	}
 
 	err2 := d.Client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 	if err2 != nil {
 		log.Printf("Error starting container using image %s: %v \n", resp.ID, err2)
-		return DockerResult{Error:err}
+		return DockerResult{Error: err}
 	}
 
 	d.ContainerId = resp.ID
 	out, err := d.Client.ContainerLogs(ctx, resp.ID,
-	                              types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
+		types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 
 	if err != nil {
-	    log.Printf("Error getting logs for container %s: %v\n", resp.ID,err)
-	    return DockerResult{Error:err}
+		log.Printf("Error getting logs for container %s: %v\n", resp.ID, err)
+		return DockerResult{Error: err}
 	}
 
 	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 
 	return DockerResult{
-	    ContainerId: resp.ID,
-	    Action: "start",
-	    Result: "success",
+		ContainerId: resp.ID,
+		Action:      "start",
+		Result:      "success",
 	}
 }
 
@@ -147,16 +147,16 @@ func (d *Docker) Stop() DockerResult {
 }
 
 var stateTransitionMap = map[State][]State{
-	Pending: {Scheduled},
+	Pending:   {Scheduled},
 	Scheduled: {Scheduled, Running, Failed},
-	Running:	{Running, Completed, Failed},
-	Completed:	{},
-	Failed:	{},
+	Running:   {Running, Completed, Failed},
+	Completed: {},
+	Failed:    {},
 }
 
-func Contains(states []State, state State) bool{
-	for _,s := range states{
-		if s== state{
+func Contains(states []State, state State) bool {
+	for _, s := range states {
+		if s == state {
 			return true
 		}
 	}
@@ -164,20 +164,18 @@ func Contains(states []State, state State) bool{
 }
 
 func ValidStateTransition(src State, dst State) bool {
-	return Contains(stateTransitionMap[src],dst)
+	return Contains(stateTransitionMap[src], dst)
 }
 
-func NewConfig(task *Task) Config{
+func NewConfig(task *Task) Config {
 	config := &task.Config
-	return *config;
+	return *config
 }
 
-func NewDocker(config Config) *Docker{
+func NewDocker(config Config) *Docker {
 	d := new(Docker)
 	dc, _ := client.NewClientWithOpts(client.FromEnv)
 	d.Client = dc
 	d.Task.Config = config
 	return d
 }
-
-

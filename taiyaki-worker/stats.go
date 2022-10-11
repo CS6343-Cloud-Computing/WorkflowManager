@@ -2,15 +2,15 @@ package main
 
 import (
 	"log"
-	linux "github.com/c9s/goprocinfo/linux"
 
+	linux "github.com/c9s/goprocinfo/linux"
 )
 
 type Stats struct {
-    MemStats  *linux.MemInfo
-    DiskStats *linux.Disk
-    CpuStats  *linux.CPUStat
-    LoadStats *linux.LoadAvg
+	MemStats  *linux.MemInfo
+	DiskStats *linux.Disk
+	CpuStats  *linux.CPUStat
+	LoadStats *linux.LoadAvg
 }
 
 func (s *Stats) MemTotalKb() uint64 {
@@ -47,9 +47,8 @@ func (s *Stats) CpuUsage() float64 {
 	nonIdle := s.CpuStats.User + s.CpuStats.Nice + s.CpuStats.System + s.CpuStats.IRQ + s.CpuStats.SoftIRQ + s.CpuStats.Steal
 	total := idle + nonIdle
 
-
 	if total == 0 {
-			return 0.00
+		return 0.00
 	}
 
 	return (float64(total) - float64(idle)) / float64(total)
@@ -58,8 +57,8 @@ func (s *Stats) CpuUsage() float64 {
 func GetMemoryInfo() *linux.MemInfo {
 	memstats, err := linux.ReadMemInfo("/proc/meminfo")
 	if err != nil {
-			log.Printf("Error reading from /proc/meminfo")
-			return &linux.MemInfo{}
+		log.Printf("Error reading from /proc/meminfo")
+		return &linux.MemInfo{}
 	}
 
 	return memstats
@@ -68,8 +67,8 @@ func GetMemoryInfo() *linux.MemInfo {
 func GetDiskInfo() *linux.Disk {
 	diskstats, err := linux.ReadDisk("/")
 	if err != nil {
-			log.Printf("Error reading from /")
-			return &linux.Disk{}
+		log.Printf("Error reading from /")
+		return &linux.Disk{}
 	}
 
 	return diskstats
@@ -78,8 +77,8 @@ func GetDiskInfo() *linux.Disk {
 func GetCpuStats() *linux.CPUStat {
 	stats, err := linux.ReadStat("/proc/stat")
 	if err != nil {
-			log.Printf("Error reading from /proc/stat")
-			return &linux.CPUStat{}
+		log.Printf("Error reading from /proc/stat")
+		return &linux.CPUStat{}
 	}
 
 	return &stats.CPUStatAll
@@ -88,8 +87,8 @@ func GetCpuStats() *linux.CPUStat {
 func GetLoadAvg() *linux.LoadAvg {
 	loadavg, err := linux.ReadLoadAvg("/proc/loadavg")
 	if err != nil {
-			log.Printf("Error reading from /proc/loadavg")
-			return &linux.LoadAvg{}
+		log.Printf("Error reading from /proc/loadavg")
+		return &linux.LoadAvg{}
 	}
 
 	return loadavg
@@ -97,9 +96,9 @@ func GetLoadAvg() *linux.LoadAvg {
 
 func GetStats() *Stats {
 	return &Stats{
-			MemStats:  GetMemoryInfo(),
-			DiskStats: GetDiskInfo(),
-			CpuStats:  GetCpuStats(),
-			LoadStats: GetLoadAvg(),
+		MemStats:  GetMemoryInfo(),
+		DiskStats: GetDiskInfo(),
+		CpuStats:  GetCpuStats(),
+		LoadStats: GetLoadAvg(),
 	}
 }

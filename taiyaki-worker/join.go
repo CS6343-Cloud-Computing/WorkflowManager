@@ -33,6 +33,5 @@ func NodeJoin(workerIP string, workerPort string, serverIP string, serverPort st
 		fmt.Println(respBody.Error)
 	}
 
-
 	return false
 }

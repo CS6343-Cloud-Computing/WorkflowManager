@@ -8,6 +8,7 @@ main:
       env:
         - "TEST1=123"
         - "TEST2=abcd"
+      query: "#ukraine"
       autoremove: true
     - name: "second_step"
       image: "nginx"
