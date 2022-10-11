@@ -20,6 +20,13 @@ import (
 	"time"
 )
 
+//Resp - Generic response
+type Resp struct {
+	Result  string `json:"result"`
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
+}
+
 type NodeJoinReq struct {
 	NodeIP   string
 	NodePort string
@@ -64,15 +71,15 @@ func (w *Worker) RunTask() task.DockerResult {
 	if task.ValidStateTransition(taskPersisted.State, taskQueued.State) {
 		switch taskQueued.State {
 		case task.Scheduled:
-	result = w.StartTask(taskQueued)
-	case task.Completed:
-		result = w.StopTask(taskQueued)
-	default:
-		result.Error = errors.New("we should not get here")
-	}
+			result = w.StartTask(taskQueued)
+		case task.Completed:
+			result = w.StopTask(taskQueued)
+		default:
+			result.Error = errors.New("we should not get here")
+		}
 	} else {
-	err := fmt.Errorf("invalid transition from %v to %v", taskPersisted.State, taskQueued.State)
-	result.Error = err
+		err := fmt.Errorf("invalid transition from %v to %v", taskPersisted.State, taskQueued.State)
+		result.Error = err
 	}
 	return result
 }
@@ -122,6 +129,7 @@ func (w *Worker) GetTasks() []byte {
 	if err != nil {
 		log.Printf("Error marshalling the queue\n")
 	}
+
 	return jsonStr
 }
 
@@ -131,30 +139,6 @@ func (w *Worker) CollectStats() {
 		w.Stats = *GetStats()
 		time.Sleep(15 * time.Second)
 	}
-}
-
-func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
-	c := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	tr := &http.Transport{TLSClientConfig: c}
-	client := &http.Client{Transport: tr}
-
-	req, err := http.NewRequest("POST", endpoint, reqBody)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Connection", "close")
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	reader := bufio.NewReader(resp.Body)
-	resBody, _ = ioutil.ReadAll(reader)
-	resp.Body.Close()
-
-	return resBody, nil
 }
 
 func runTasks(w *Worker) {
@@ -170,7 +154,31 @@ func runTasks(w *Worker) {
 		log.Println("Sleeping for 10 seconds.")
 		time.Sleep(10 * time.Second)
 	}
+}
 
+func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
+	url := "http://" + serverIP + ":" + serverPort + "/" + endpoint
+	c := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	tr := &http.Transport{TLSClientConfig: c}
+	client := &http.Client{Transport: tr}
+
+	req, err := http.NewRequest("POST", url, reqBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Connection", "close")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	reader := bufio.NewReader(resp.Body)
+	resBody, _ = ioutil.ReadAll(reader)
+	resp.Body.Close()
+
+	return resBody, nil
 }
 
 func main() {
@@ -226,7 +234,7 @@ func main() {
 		}
 	}
 
-	// NodeJoin(workerIP, workerPort, serverIP, serverPort, joinKey)
+	NodeJoin(workerIP, workerPort, serverIP, serverPort, joinKey)
 
 	worker := Worker{Queue: *queue.New(), Db: make(map[uuid.UUID]task.Task)}
 	go runTasks(&worker)
