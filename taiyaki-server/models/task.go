@@ -8,7 +8,7 @@ import (
 type Task struct {
 	gorm.Model
 	ID            int
-	WorkflowID    int
+	WorkflowID    string
 	UUID          string
 	ContainerID   string
 	Name          string
@@ -17,7 +17,7 @@ type Task struct {
 	StartTime     datatypes.Time
 	FinishTime    datatypes.Time
 	Config        datatypes.JSON
-	Order         uint32
+	Order         int
 }
 
 // create a task

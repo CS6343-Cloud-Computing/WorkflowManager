@@ -9,8 +9,10 @@ import (
 	"sync"
 	Controller "taiyaki-server/controllers"
 	"taiyaki-server/models"
+	"taiyaki-server/task"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"gopkg.in/yaml.v3"
 	"gorm.io/datatypes"
@@ -38,7 +40,8 @@ type APIConfig struct {
 
 type WorkflowTemplate struct {
 	Main struct {
-		Steps []StepItem
+		UserName string
+		Steps    []StepItem
 	}
 }
 
@@ -47,6 +50,7 @@ type StepItem struct {
 	Image      string
 	Cmd        []string
 	Env        []string
+	Query      string
 	Autoremove bool
 }
 
@@ -77,7 +81,44 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		panic(err)
 	}
 
-	
+	workflowDb := models.Workflow{}
+	workflowDb.UserName = workflow.Main.UserName
+
+	workflowId := uuid.New().String()
+	workflowDb.WorkflowID = workflowId
+
+	var taskIds []string
+	for order, workflowTask := range workflow.Main.Steps {
+		taskDb := models.Task{}
+		taskDb.WorkflowID = workflowId
+		taskDb.UUID = uuid.New().String()
+		taskDb.ContainerID = workflowTask.Name
+		taskDb.Name = workflowTask.Name
+		taskDb.State = "Pending"
+		taskDb.Order = order
+
+		config := &task.Config{}
+		config.Image = workflowTask.Image
+		config.Cmd = workflowTask.Cmd
+		config.Env = workflowTask.Env
+		config.Query = workflowTask.Query
+		configJson, err := json.Marshal(config)
+		if err != nil {
+			panic(err)
+		}
+		taskDb.Config = configJson
+		taskCntrl.CreateTask(taskDb)
+
+		taskIds = append(taskIds, taskDb.UUID)
+
+	}
+	taskIdsJson, err := json.Marshal(taskIds)
+	if err != nil {
+		panic(err)
+	}
+	workflowDb.Tasks = taskIdsJson
+
+	workflowCntrl.CreateWorkflow(workflowDb)
 
 	if len(workflow.Main.Steps) == 0 {
 		resp := Resp{"Empty workflow", true, ""}

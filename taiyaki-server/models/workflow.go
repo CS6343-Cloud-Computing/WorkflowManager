@@ -7,9 +7,10 @@ import (
 
 type Workflow struct {
 	gorm.Model
-	ID       int
-	UserName string
-	Tasks    datatypes.JSON
+	ID         int
+	WorkflowID string
+	UserName   string
+	Tasks      datatypes.JSON
 }
 
 // create a workflow

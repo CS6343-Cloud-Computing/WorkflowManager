@@ -2,7 +2,7 @@ package task
 
 import (
 	"time"
-	
+
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
 )
@@ -26,6 +26,7 @@ type Config struct {
 	Image         string
 	Env           []string
 	RestartPolicy string
+	Query         string
 }
 
 type Task struct {
