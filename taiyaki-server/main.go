@@ -11,7 +11,6 @@ import (
 	models "taiyaki-server/models"
 	mysql "taiyaki-server/mysql"
 	"taiyaki-server/task"
-	"time"
 
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
@@ -163,20 +162,20 @@ func main() {
 	go api.Start(&wg, db)
 	wg.Wait()
 
-	m := NewManager()
+	// m := NewManager()
 	//create a new manager
-	go func() {
-		for {
-			fmt.Printf("[Manager] Updating tasks from %d workers\n", len(m.Workers))
-			m.UpdateTasks()
-			time.Sleep(15 * time.Second)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		fmt.Printf("[Manager] Updating tasks from %d workers\n", len(m.Workers))
+	// 		m.UpdateTasks()
+	// 		time.Sleep(15 * time.Second)
+	// 	}
+	// }()
 
-	for {
-		for _, t := range m.TaskDb {
-			fmt.Printf("[Manager] Task: id: %s, state: %d\n", t.ID, t.State)
-			time.Sleep(15 * time.Second)
-		}
-	}
+	// for {
+	// 	for _, t := range m.TaskDb {
+	// 		fmt.Printf("[Manager] Task: id: %s, state: %d\n", t.ID, t.State)
+	// 		time.Sleep(15 * time.Second)
+	// 	}
+	// }
 }

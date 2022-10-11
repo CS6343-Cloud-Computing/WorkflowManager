@@ -77,6 +77,8 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		panic(err)
 	}
 
+	
+
 	if len(workflow.Main.Steps) == 0 {
 		resp := Resp{"Empty workflow", true, ""}
 		json.NewEncoder(w).Encode(resp)
