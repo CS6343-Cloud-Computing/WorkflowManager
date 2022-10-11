@@ -12,8 +12,8 @@ import (
 type DBConfig struct {
 	Username string
 	Password string
-	Host string
-	Port string
+	Host     string
+	Port     string
 	Database string
 }
 
@@ -24,14 +24,14 @@ func InitDb() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-	dbConfig := DBConfig{os.Getenv("USERNAME"), os.Getenv("PASSWORD"), os.Getenv("HOST"), os.Getenv("PORT"), os.Getenv("DATABASENAME")} 
+	dbConfig := DBConfig{os.Getenv("USERNAME"), os.Getenv("PASSWORD"), os.Getenv("HOST"), os.Getenv("PORT"), os.Getenv("DATABASENAME")}
 	Db = connectDB(dbConfig)
 	return Db
 }
 
-func connectDB(c DBConfig) (*gorm.DB) {
+func connectDB(c DBConfig) *gorm.DB {
 	fmt.Println("Connecting to the MySQL Server")
-	dsn := c.Username +":"+ c.Password +"@tcp"+ "(" + c.Host + ":" + c.Port +")/" + c.Database + "?" + "parseTime=true&loc=Local"
+	dsn := c.Username + ":" + c.Password + "@tcp" + "(" + c.Host + ":" + c.Port + ")/" + c.Database + "?" + "parseTime=true&loc=Local"
 	fmt.Println("dsn : ", dsn)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 

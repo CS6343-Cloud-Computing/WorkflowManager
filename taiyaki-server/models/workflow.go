@@ -1,19 +1,18 @@
 package models
 
 import (
-
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
 type Workflow struct {
 	gorm.Model
-	ID         int
-	UserName	string
-	Tasks	datatypes.JSON
+	ID       int
+	UserName string
+	Tasks    datatypes.JSON
 }
 
-//create a workflow
+// create a workflow
 func CreateWorkflow(db *gorm.DB, workflow *Workflow) (err error) {
 	err = db.Create(workflow).Error
 	if err != nil {
@@ -22,7 +21,7 @@ func CreateWorkflow(db *gorm.DB, workflow *Workflow) (err error) {
 	return nil
 }
 
-//get workflows
+// get workflows
 func GetWorkflows(db *gorm.DB, workflows *[]Workflow) (err error) {
 	err = db.Find(workflows).Error
 	if err != nil {

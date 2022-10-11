@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"taiyaki-server/models"
 	"errors"
+	"taiyaki-server/models"
+
 	"gorm.io/gorm"
 )
 
@@ -10,11 +11,11 @@ type WorkflowRepo struct {
 	Db *gorm.DB
 }
 
-func NewWorkflow(db * gorm.DB) *WorkflowRepo {
+func NewWorkflow(db *gorm.DB) *WorkflowRepo {
 	return &WorkflowRepo{Db: db}
 }
 
-//create workflow
+// create workflow
 func (repo *WorkflowRepo) CreateWorkflow(workflow models.Workflow) {
 	err := models.CreateWorkflow(repo.Db, &workflow)
 	if err != nil {
@@ -22,8 +23,8 @@ func (repo *WorkflowRepo) CreateWorkflow(workflow models.Workflow) {
 	}
 }
 
-//get workflow by uuid
-func (repo *WorkflowRepo) GetWorkflow(id int) (models.Workflow, bool){
+// get workflow by uuid
+func (repo *WorkflowRepo) GetWorkflow(id int) (models.Workflow, bool) {
 	var workflow models.Workflow
 	err := models.GetWorkflow(repo.Db, &workflow, id)
 	if err != nil {
@@ -35,7 +36,7 @@ func (repo *WorkflowRepo) GetWorkflow(id int) (models.Workflow, bool){
 	return workflow, true
 }
 
-//update the workflow
+// update the workflow
 func (repo *WorkflowRepo) UpdateWorkflow(workflow models.Workflow) {
 	err := models.UpdateWorkflow(repo.Db, &workflow)
 	if err != nil {

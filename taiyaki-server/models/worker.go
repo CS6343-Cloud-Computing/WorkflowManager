@@ -15,7 +15,7 @@ type Worker struct {
 	Status     string
 }
 
-//create a worker
+// create a worker
 func CreateWorker(db *gorm.DB, worker *Worker) (err error) {
 	err = db.Create(worker).Error
 	if err != nil {
@@ -24,7 +24,7 @@ func CreateWorker(db *gorm.DB, worker *Worker) (err error) {
 	return nil
 }
 
-//get workers
+// get workers
 func GetWorkers(db *gorm.DB, workers *[]Worker) (err error) {
 	err = db.Find(workers).Error
 	if err != nil {

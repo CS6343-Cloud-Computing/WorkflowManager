@@ -1,27 +1,25 @@
 package models
 
 import (
-
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
-
 type Task struct {
 	gorm.Model
-	ID         int
-	Uuid	string
-	ContainerId	string
-	UserName	string
-	Name	string
-	State string
-	RestartPolicy	string
-	StartTime	datatypes.Time
-	FinishTime	datatypes.Time
-	Config	datatypes.JSON
+	ID            int
+	Uuid          string
+	ContainerId   string
+	UserName      string
+	Name          string
+	State         string
+	RestartPolicy string
+	StartTime     datatypes.Time
+	FinishTime    datatypes.Time
+	Config        datatypes.JSON
 }
 
-//create a task
+// create a task
 func CreateTask(db *gorm.DB, task *Task) (err error) {
 	err = db.Create(task).Error
 	if err != nil {
@@ -30,7 +28,7 @@ func CreateTask(db *gorm.DB, task *Task) (err error) {
 	return nil
 }
 
-//get tasks
+// get tasks
 func GetTasks(db *gorm.DB, tasks *[]Task) (err error) {
 	err = db.Find(tasks).Error
 	if err != nil {
