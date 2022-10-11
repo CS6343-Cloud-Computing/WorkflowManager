@@ -34,3 +34,11 @@ func (repo *WorkerRepo) GetWorker(WorkerIP string) (models.Worker, bool){
 	}
 	return worker, true
 }
+
+//update the worker
+func (repo *WorkerRepo) UpdateWorker(worker models.Worker) {
+	err := models.UpdateWorker(repo.Db, &worker)
+	if err != nil {
+		panic(err)
+	}
+}

@@ -18,14 +18,13 @@ import (
 	"gorm.io/gorm"
 )
 
-
 type NodeJoinReq struct {
 	NodeIP   string
 	NodePort string
 	JoinKey  string
 }
 
-//Resp - Generic response
+// Resp - Generic response
 type Resp struct {
 	Result  string `json:"result"`
 	Success bool   `json:"success"`
@@ -89,7 +88,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func nodeJoinHandler(w http.ResponseWriter, r *http.Request, worker *workerController.WorkerRepo, config APIConfig) {
+func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *workerController.WorkerRepo, config APIConfig) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	defer r.Body.Close()
@@ -107,19 +106,21 @@ func nodeJoinHandler(w http.ResponseWriter, r *http.Request, worker *workerContr
 	}
 
 	//Check if worker exist or not
-	workerNode, valid := worker.GetWorker(joinReq.NodeIP)
+	worker, valid := workerCntrl.GetWorker(joinReq.NodeIP)
 
 	if valid {
-		resp := Resp{Success: false, Error: "This worker node has already joined the cluster"}
+		resp := Resp{Success: false, Error: "This worker node has already joined the cluster but has been marked as active now"}
+		worker.Status = "active"
+		workerCntrl.UpdateWorker(worker)
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	workerNode = models.Worker{WorkerIP: joinReq.NodeIP, WorkerPort: joinReq.NodePort, WorkerKey: joinReq.JoinKey, Containers: datatypes.JSON{}, Status: "active"}
+	worker = models.Worker{WorkerIP: joinReq.NodeIP, WorkerPort: joinReq.NodePort, WorkerKey: joinReq.JoinKey, Containers: datatypes.JSON{}, Status: "active"}
 
-	fmt.Println(workerNode)
+	fmt.Println(worker)
 
-	worker.CreateWorker(workerNode)
+	workerCntrl.CreateWorker(worker)
 
 }
 
