@@ -137,18 +137,14 @@ func (m *Manager) AddTask(te task.TaskEvent) {
 	m.Pending.Enqueue(te)
 }
 
-func New(workers []string) *Manager {
+func NewManager() *Manager {
 	taskDb := make(map[uuid.UUID]*task.Task)
 	eventDb := make(map[uuid.UUID]*task.TaskEvent)
 	workerTaskMap := make(map[string][]uuid.UUID)
 	taskWorkerMap := make(map[uuid.UUID]string)
-	for worker := range workers {
-		workerTaskMap[workers[worker]] = []uuid.UUID{}
-	}
 
 	return &Manager{
 		Pending:       *queue.New(),
-		Workers:       workers,
 		TaskDb:        taskDb,
 		EventDb:       eventDb,
 		WorkerTaskMap: workerTaskMap,
@@ -159,13 +155,15 @@ func New(workers []string) *Manager {
 func main() {
 	db := mysql.InitDb()
 	db.AutoMigrate(&models.Worker{})
+	db.AutoMigrate(&models.Task{})
+	db.AutoMigrate(&models.Workflow{})
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	api := apiserver.APIConfig{ServerIP: "192.168.1.92", ServerPort: "8080", WorkerJoinKey: "1234"}
 	go api.Start(&wg, db)
 	wg.Wait()
 
-	
+	m := NewManager()
 	//create a new manager
 	go func() {
 		for {

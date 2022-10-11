@@ -7,9 +7,8 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	workerController "taiyaki-server/controllers"
+	Controller "taiyaki-server/controllers"
 	"taiyaki-server/models"
-
 	"time"
 
 	"github.com/gorilla/mux"
@@ -65,7 +64,7 @@ func serverStatusHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func workflowHandler(w http.ResponseWriter, r *http.Request) {
+func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.TaskRepo, workflowCntrl *Controller.WorkflowRepo ) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	defer r.Body.Close()
@@ -88,7 +87,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *workerController.WorkerRepo, config APIConfig) {
+func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *Controller.WorkerRepo, config APIConfig) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	defer r.Body.Close()
@@ -125,14 +124,16 @@ func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *worker
 }
 
 func (c APIConfig) Start(wg *sync.WaitGroup, db *gorm.DB) {
-	workerCntrl := workerController.NewWorker(db)
+	workerCntrl := Controller.NewWorker(db)
+	taskCntrl := Controller.NewTask(db)
+	workflowCntrl := Controller.NewWorkflow(db)
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", UnHandler)
 	router.HandleFunc("/server", UnHandler)
 	router.HandleFunc("/workflow", UnHandler)
 	router.HandleFunc("/node", UnHandler)
 	router.HandleFunc("/server/status", serverStatusHandler)
-	router.HandleFunc("/workflow/submit", workflowHandler)
+	router.HandleFunc("/workflow/submit", func(w http.ResponseWriter, r *http.Request) { workflowHandler(w, r, taskCntrl, workflowCntrl) })
 	router.HandleFunc("/node/join", func(w http.ResponseWriter, r *http.Request) { nodeJoinHandler(w, r, workerCntrl, c) })
 	srv := &http.Server{
 		Handler:      router,
