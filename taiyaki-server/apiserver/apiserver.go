@@ -71,7 +71,7 @@ func serverStatusHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.TaskRepo, workflowCntrl *Controller.WorkflowRepo) {
+func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.TaskRepo, workflowCntrl *Controller.WorkflowRepo, m *Manager.Manager) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	defer r.Body.Close()
@@ -113,7 +113,11 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		taskCntrl.CreateTask(taskDb)
 
 		taskIds = append(taskIds, taskDb.UUID)
-
+		te := task.TaskEvent{}
+		te.ID = uuid.New()
+		te.Timestamp = time.Now()
+		te.State = 1
+		// te.Task = taskDb
 	}
 	taskIdsJson, err := json.Marshal(taskIds)
 	if err != nil {
@@ -180,7 +184,7 @@ func (c APIConfig) Start(wg *sync.WaitGroup, m *Manager.Manager) {
 	router.HandleFunc("/workflow", UnHandler)
 	router.HandleFunc("/node", UnHandler)
 	router.HandleFunc("/server/status", serverStatusHandler)
-	router.HandleFunc("/workflow/submit", func(w http.ResponseWriter, r *http.Request) { workflowHandler(w, r, taskCntrl, workflowCntrl) })
+	router.HandleFunc("/workflow/submit", func(w http.ResponseWriter, r *http.Request) { workflowHandler(w, r, taskCntrl, workflowCntrl, m) })
 	router.HandleFunc("/node/join", func(w http.ResponseWriter, r *http.Request) { nodeJoinHandler(w, r, workerCntrl, c) })
 	srv := &http.Server{
 		Handler:      router,
