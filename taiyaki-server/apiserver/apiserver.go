@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +9,9 @@ import (
 	"net/http"
 	"sync"
 	Controller "taiyaki-server/controllers"
+	Manager "taiyaki-server/manager"
 	"taiyaki-server/models"
+	Scheduler "taiyaki-server/scheduler"
 	"taiyaki-server/task"
 	"time"
 
@@ -16,7 +19,7 @@ import (
 	"github.com/gorilla/mux"
 	"gopkg.in/yaml.v3"
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 )
 
 type NodeJoinReq struct {
@@ -166,7 +169,8 @@ func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *Contro
 
 }
 
-func (c APIConfig) Start(wg *sync.WaitGroup, db *gorm.DB) {
+func (c APIConfig) Start(wg *sync.WaitGroup, m *Manager.Manager) {
+	db := m.DB
 	workerCntrl := Controller.NewWorker(db)
 	taskCntrl := Controller.NewTask(db)
 	workflowCntrl := Controller.NewWorkflow(db)
@@ -188,3 +192,95 @@ func (c APIConfig) Start(wg *sync.WaitGroup, db *gorm.DB) {
 	log.Fatal(srv.ListenAndServe())
 	wg.Done()
 }
+
+func SendWork(m *Manager.Manager) {
+	if m.Pending.Len() > 0 {
+		w := Scheduler.SelectWorker(m)
+
+		e := m.Pending.Dequeue()
+		te := e.(task.TaskEvent)
+		t := te.Task
+		log.Printf("Pulled %v off pending queue", t)
+
+		m.EventDb[te.ID] = &te
+
+		t.State = task.Scheduled
+
+		data, err := json.Marshal(te)
+		if err != nil {
+			log.Printf("Unable to marshal task object: %v.", t)
+		}
+
+		workerIpPort := w.WorkerIP + ":" + w.WorkerPort
+		url := fmt.Sprintf("http://%s/tasks", workerIpPort)
+		resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+		if err != nil {
+			log.Printf("Error connecting to %v: %v", w, err)
+			m.Pending.Enqueue(t)
+			return
+		}
+
+		d := json.NewDecoder(resp.Body)
+		if resp.StatusCode != http.StatusCreated {
+			fmt.Println(d)
+			// e := .ErrResponse{}
+			// err := d.Decode(&e)
+			// if err != nil {
+			// 	fmt.Printf("Error decoding response: %s\n", err.Error())
+			// 	return
+			// }
+			//log.Printf("Response error (%d): %s", e.HTTPStatusCode, e.Message)
+			return
+		}
+
+		t = task.Task{}
+		err = d.Decode(&t)
+		if err != nil {
+			fmt.Printf("Error decoding response: %s\n", err.Error())
+			return
+		}
+		log.Printf("%#v\n", t)
+	} else {
+		log.Println("No work in the queue")
+	}
+}
+
+// func UpdateTasks(m *Manager.Manager) {
+// 	for _, worker := range m.Workers {
+// 		log.Printf("Checking worker %v for task updates", worker)
+// 		url := fmt.Sprintf("http://%s/tasks", worker)
+// 		resp, err := http.Get(url)
+// 		if err != nil {
+// 			log.Printf("Error connecting to %v: %v", worker, err)
+// 		}
+
+// 		if resp.StatusCode != http.StatusOK {
+// 			log.Printf("Error sending request: %v", err)
+// 		}
+
+// 		d := json.NewDecoder(resp.Body)
+// 		var tasks []*task.Task
+// 		err = d.Decode(&tasks)
+// 		if err != nil {
+// 			log.Printf("Error unmarshalling tasks: %s", err.Error())
+// 		}
+
+// 		for _, t := range tasks {
+// 			log.Printf("Attempting to update task %v", t.ID)
+
+// 			_, ok := m.TaskDb[t.ID]
+// 			if !ok {
+// 				log.Printf("Task with ID %s not found\n", t.ID)
+// 				return
+// 			}
+
+// 			if m.TaskDb[t.ID].State != t.State {
+// 				m.TaskDb[t.ID].State = t.State
+// 			}
+
+// 			m.TaskDb[t.ID].StartTime = t.StartTime
+// 			m.TaskDb[t.ID].FinishTime = t.FinishTime
+// 			m.TaskDb[t.ID].ContainerId = t.ContainerId
+// 		}
+// 	}
+// }

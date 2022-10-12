@@ -36,6 +36,16 @@ func (repo *WorkerRepo) GetWorker(WorkerIP string) (models.Worker, bool) {
 	return worker, true
 }
 
+// get worker by ip address
+func (repo *WorkerRepo) GetWorkers() ([]models.Worker) {
+	var workers []models.Worker
+	err := models.GetWorkers(repo.Db, &workers)
+	if err != nil {
+		panic(err)
+	}
+	return workers
+}
+
 // update the worker
 func (repo *WorkerRepo) UpdateWorker(worker models.Worker) {
 	err := models.UpdateWorker(repo.Db, &worker)
