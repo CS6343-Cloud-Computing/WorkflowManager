@@ -36,15 +36,17 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 			//handle error
 		}
 		fmt.Println(string(respBody))
-		usage,err := strconv.Atoi(string(respBody))
+		usage,err := strconv.ParseFloat(string(respBody),64)
 		if err!= nil {
 			//handle error
 		}
-		if usage<int(threshold){
+		if usage<threshold{
+			fmt.Println("Got a useful worker", worker)
 			selectedWorker = worker
 			break
 		}
 	}
+	println("No userful worker")
 	return selectedWorker
 }
 

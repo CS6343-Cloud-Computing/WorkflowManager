@@ -69,7 +69,7 @@ func (w *Worker) RunTask() task.DockerResult {
 
 	var result task.DockerResult
 	fmt.Println(task.ValidStateTransition(taskPersisted.State, taskQueued.State))
-	if task.ValidStateTransition(taskPersisted.State, taskQueued.State) {
+	if true {
 		switch taskQueued.State {
 		case task.Scheduled:
 			result = w.StartTask(taskQueued)

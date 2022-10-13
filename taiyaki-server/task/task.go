@@ -31,6 +31,7 @@ type Config struct {
 
 type Task struct {
 	ID            uuid.UUID
+	WorkflowID    string
 	ContainerId   string
 	Name          string
 	State         State

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	apiserver "taiyaki-server/apiserver"
 	Manager "taiyaki-server/manager"
 	models "taiyaki-server/models"
 	mysql "taiyaki-server/mysql"
-	Scheduler "taiyaki-server/scheduler"
 	"time"
 )
 
@@ -24,16 +24,17 @@ func main() {
 	go api.Start(&wg, m)
 	go func() {
 		for {
-			Scheduler.SelectWorker(m)
+			fmt.Println("Before Sendwork")
+			apiserver.SendWork(m)
+			fmt.Println("After Sendwork")
 			time.Sleep(15 * time.Second)
 		}
 	}()
 
 	wg.Wait()
 
-	
 	//create a new manager
-	
+
 	// for {
 	// 	for _, t := range m.TaskDb {
 	// 		fmt.Printf("[Manager] Task: id: %s, state: %d\n", t.ID, t.State)

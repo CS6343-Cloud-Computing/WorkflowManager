@@ -93,11 +93,23 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	var taskIds []string
 	for order, workflowTask := range workflow.Main.Steps {
 		taskDb := models.Task{}
+		taskOb := task.Task{}
+
 		taskDb.WorkflowID = workflowId
-		taskDb.UUID = uuid.New().String()
+		taskOb.WorkflowID = workflowId
+
+		taskOb.ID = uuid.New()
+		taskDb.UUID = taskOb.ID.String()
+
 		taskDb.ContainerID = workflowTask.Name
+		taskOb.ContainerId = workflowTask.Name
+
 		taskDb.Name = workflowTask.Name
+		taskOb.Name = workflowTask.Name
+
 		taskDb.State = "Pending"
+		taskOb.State = task.Pending
+
 		taskDb.Order = order
 
 		config := &task.Config{}
@@ -105,6 +117,9 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		config.Cmd = workflowTask.Cmd
 		config.Env = workflowTask.Env
 		config.Query = workflowTask.Query
+
+		taskOb.Config = *config
+
 		configJson, err := json.Marshal(config)
 		if err != nil {
 			panic(err)
@@ -117,7 +132,8 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		te.ID = uuid.New()
 		te.Timestamp = time.Now()
 		te.State = 1
-		// te.Task = taskDb
+		te.Task = taskOb
+		m.AddTask(te)
 	}
 	taskIdsJson, err := json.Marshal(taskIds)
 	if err != nil {
@@ -132,7 +148,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-
+	fmt.Println("Successfully got and saved the workflow")
 	resp := Resp{"Successfully got the workflow", true, ""}
 	json.NewEncoder(w).Encode(resp)
 }
@@ -171,6 +187,8 @@ func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *Contro
 
 	workerCntrl.CreateWorker(worker)
 
+	resp := Resp{Success: true, Error: ""}
+	json.NewEncoder(w).Encode(resp)
 }
 
 func (c APIConfig) Start(wg *sync.WaitGroup, m *Manager.Manager) {
@@ -203,24 +221,29 @@ func SendWork(m *Manager.Manager) {
 
 		e := m.Pending.Dequeue()
 		te := e.(task.TaskEvent)
-		t := te.Task
-		log.Printf("Pulled %v off pending queue", t)
+
+		log.Printf("Pulled %v off pending queue", te.Task)
 
 		m.EventDb[te.ID] = &te
 
-		t.State = task.Scheduled
+		te.Task.State = task.Scheduled
+		taskCntrl := Controller.NewTask(m.DB)
+		taskUpdate, _ := taskCntrl.GetTask(te.Task.ID.String())
+		taskUpdate.State = "Scheduled"
+		taskCntrl.UpdateTask(taskUpdate)
 
 		data, err := json.Marshal(te)
 		if err != nil {
-			log.Printf("Unable to marshal task object: %v.", t)
+			log.Printf("Unable to marshal task object: %v.", te.Task)
 		}
 
 		workerIpPort := w.WorkerIP + ":" + w.WorkerPort
+		fmt.Println("Sending to a work", workerIpPort)
 		url := fmt.Sprintf("http://%s/tasks", workerIpPort)
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
 		if err != nil {
 			log.Printf("Error connecting to %v: %v", w, err)
-			m.Pending.Enqueue(t)
+			m.Pending.Enqueue(te.Task)
 			return
 		}
 
@@ -237,7 +260,7 @@ func SendWork(m *Manager.Manager) {
 			return
 		}
 
-		t = task.Task{}
+		t := task.Task{}
 		err = d.Decode(&t)
 		if err != nil {
 			fmt.Printf("Error decoding response: %s\n", err.Error())

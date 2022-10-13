@@ -33,10 +33,12 @@ type Config struct {
 	Image         string
 	Env           []string
 	RestartPolicy string
+	Query         string
 }
 
 type Task struct {
 	ID            uuid.UUID
+	WorkflowID    string
 	ContainerId   string
 	Name          string
 	State         State
