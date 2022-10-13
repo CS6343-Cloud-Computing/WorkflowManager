@@ -87,7 +87,7 @@ func (w *Worker) RunTask() task.DockerResult {
 
 func (w *Worker) StartTask(t task.Task) task.DockerResult {
 	config := task.NewConfig(&t)
-	d := task.NewDocker(config)
+	d := task.NewDocker(config, t)
 	result := d.Run()
 	if result.Error != nil {
 		fmt.Printf("Error running task %v: %v\n", t.ID, result.Error)
@@ -106,7 +106,7 @@ func (w *Worker) StartTask(t task.Task) task.DockerResult {
 
 func (w *Worker) StopTask(t task.Task) task.DockerResult {
 	config := task.NewConfig(&t)
-	d := task.NewDocker(config)
+	d := task.NewDocker(config, t)
 	d.ContainerId = t.ContainerId
 	result := d.Stop()
 	if result.Error != nil {

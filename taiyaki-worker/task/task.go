@@ -92,7 +92,7 @@ func (d *Docker) Run() DockerResult {
 		PublishAllPorts: true,
 	}
 
-	resp, err := d.Client.ContainerCreate(ctx, &cc, &hc, nil, nil, d.Task.Config.Name)
+	resp, err := d.Client.ContainerCreate(ctx, &cc, &hc, nil, nil, d.Task.ContainerId)
 	if err != nil {
 		log.Printf("Error creating container using image %s: %v \n", d.Task.Config.Image, err)
 		return DockerResult{Error: err}
@@ -174,10 +174,11 @@ func NewConfig(task *Task) Config {
 	return *config
 }
 
-func NewDocker(config Config) *Docker {
+func NewDocker(config Config,t Task) *Docker {
 	d := new(Docker)
 	dc, _ := client.NewClientWithOpts(client.FromEnv)
 	d.Client = dc
 	d.Task.Config = config
+	d.Task = t
 	return d
 }
