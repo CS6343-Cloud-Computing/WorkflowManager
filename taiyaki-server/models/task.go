@@ -18,6 +18,7 @@ type Task struct {
 	FinishTime    datatypes.Time
 	Config        datatypes.JSON
 	Order         int
+	WorkerIpPort  string
 }
 
 // create a task

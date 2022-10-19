@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	Controller "taiyaki-server/controllers"
 	Manager "taiyaki-server/manager"
@@ -43,7 +44,7 @@ type APIConfig struct {
 
 type WorkflowTemplate struct {
 	Main struct {
-		UserName string
+		Username string
 		Steps    []StepItem
 	}
 }
@@ -85,7 +86,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	}
 
 	workflowDb := models.Workflow{}
-	workflowDb.UserName = workflow.Main.UserName
+	workflowDb.Username = workflow.Main.Username
 
 	workflowId := uuid.New().String()
 	workflowDb.WorkflowID = workflowId
@@ -153,6 +154,57 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	json.NewEncoder(w).Encode(resp)
 }
 
+func getTasksForUser(w http.ResponseWriter, r *http.Request, m *Manager.Manager) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	defer r.Body.Close()
+	params := mux.Vars(r)
+	userName := params["userName"]
+	fmt.Println("Getting workflows for user " + userName)
+	workflowCntrl := Controller.NewWorkflow(m.DB)
+	workflws,valid := workflowCntrl.GetWorkflowByUserName(userName)
+	if !valid {
+		fmt.Println("Error getting workflows for user")
+		panic(valid)
+	}
+	fmt.Println(workflws, " hello")
+	//find the workflow id
+	var tasks []datatypes.JSON
+
+	for _, workflow := range workflws {
+		fmt.Println(workflow.ID, workflow.Tasks)
+		tasks = append(tasks, workflow.Tasks)
+	}
+
+	json.NewEncoder(w).Encode(tasks)
+}
+func deleteTask(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.TaskRepo) {
+
+	params := mux.Vars(r)
+	taskID := params["taskID"]
+	fmt.Println("deleting task " + taskID)
+
+	taskObj, valid := taskCntrl.GetTask(taskID)
+	if !valid {
+		fmt.Println("Error while getting taskObj")
+		panic(valid)
+	}
+
+	workerIpPort := taskObj.WorkerIpPort
+	workerStr := strings.Split(workerIpPort, ":")
+
+	fmt.Println("task is in worker: " + workerIpPort)
+	endPoint := "tasks/" + taskID
+
+	respBody, err1 := Scheduler.ReqWorker(endPoint, "DELETE", nil, workerStr[0], workerStr[1])
+	if err1 != nil {
+		fmt.Println("error while serving the request to worker")
+		panic(err1)
+	}
+
+	println(string(respBody))
+}
+
 func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *Controller.WorkerRepo, config APIConfig) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -204,6 +256,8 @@ func (c APIConfig) Start(wg *sync.WaitGroup, m *Manager.Manager) {
 	router.HandleFunc("/server/status", serverStatusHandler)
 	router.HandleFunc("/workflow/submit", func(w http.ResponseWriter, r *http.Request) { workflowHandler(w, r, taskCntrl, workflowCntrl, m) })
 	router.HandleFunc("/node/join", func(w http.ResponseWriter, r *http.Request) { nodeJoinHandler(w, r, workerCntrl, c) })
+	router.HandleFunc("/tasks/{taskID}", func(w http.ResponseWriter, r *http.Request) { deleteTask(w, r, taskCntrl) })
+	router.HandleFunc("/tasks/User/{userName}", func(w http.ResponseWriter, r *http.Request) { getTasksForUser(w, r, m)})
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         c.ServerIP + ":" + c.ServerPort,
@@ -215,10 +269,21 @@ func (c APIConfig) Start(wg *sync.WaitGroup, m *Manager.Manager) {
 	wg.Done()
 }
 
-func SendWork(m *Manager.Manager) {
-	if m.Pending.Len() > 0 {
-		w := Scheduler.SelectWorker(m)
+func isWorkerPresent(m *Manager.Manager) bool {
+	workrCntrl := Controller.NewWorker(m.DB)
+	workers := workrCntrl.GetWorkers()
+	return len(workers) > 0
+}
 
+func SendWork(m *Manager.Manager) {
+
+	if m.Pending.Len() > 0 && isWorkerPresent(m) {
+		nilWorkr := models.Worker{}
+		w := Scheduler.SelectWorker(m)
+		//if it returns no worker, return from the func
+		if w.ID == nilWorkr.ID {
+			return
+		}
 		e := m.Pending.Dequeue()
 		te := e.(task.TaskEvent)
 
@@ -230,7 +295,6 @@ func SendWork(m *Manager.Manager) {
 		taskCntrl := Controller.NewTask(m.DB)
 		taskUpdate, _ := taskCntrl.GetTask(te.Task.ID.String())
 		taskUpdate.State = "Scheduled"
-		taskCntrl.UpdateTask(taskUpdate)
 
 		data, err := json.Marshal(te)
 		if err != nil {
@@ -260,6 +324,8 @@ func SendWork(m *Manager.Manager) {
 			return
 		}
 
+		taskUpdate.WorkerIpPort = workerIpPort
+		taskCntrl.UpdateTask(taskUpdate)
 		t := task.Task{}
 		err = d.Decode(&t)
 		if err != nil {

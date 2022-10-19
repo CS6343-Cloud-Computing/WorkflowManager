@@ -59,7 +59,8 @@ func checkServerStatus(cCtx *cli.Context) error {
 
 	resp, err := reqServer(endpoint, nil)
 	if err != nil {
-		panic(err)
+		// fmt.Println(err)
+		return err
 	}
 
 	respBody := Resp{}
@@ -80,11 +81,13 @@ func checkServerStatus(cCtx *cli.Context) error {
 
 func submitWorkflow(cCtx *cli.Context) error {
 	workflowFile := cCtx.Args().First()
+
 	if workflowFile == "" {
 		workflowFile = "./config.yml"
 	}
 
 	f, err := os.Open(workflowFile)
+
 	if err != nil {
 		panic(err)
 	}

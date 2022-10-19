@@ -31,7 +31,7 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	selectedWorker := models.Worker{}
 	threshold := 0.5
 	for _,worker := range workers{
-		respBody,err := reqWorker("stats",nil,worker.WorkerIP,worker.WorkerPort)
+		respBody,err := ReqWorker("stats","GET",nil,worker.WorkerIP,worker.WorkerPort)
 		if err!= nil{
 			//handle error
 		}
@@ -50,7 +50,7 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	return selectedWorker
 }
 
-func reqWorker(endpoint string, reqBody io.Reader, workerIP string, workerPort string) (resBody []byte, err error) {
+func ReqWorker(endpoint string,method string, reqBody io.Reader, workerIP string, workerPort string) (resBody []byte, err error) {
 	url := "http://" + workerIP + ":" + workerPort + "/" + endpoint
 	c := &tls.Config{
 		InsecureSkipVerify: true,
@@ -58,7 +58,7 @@ func reqWorker(endpoint string, reqBody io.Reader, workerIP string, workerPort s
 	tr := &http.Transport{TLSClientConfig: c}
 	client := &http.Client{Transport: tr}
 
-	req, err := http.NewRequest("GET", url, reqBody)
+	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
 		return nil, err
 	}

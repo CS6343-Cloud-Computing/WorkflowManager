@@ -19,3 +19,4 @@ main:
         - "TEST1=123"
         - "TEST2=abcd"
       autoremove: false
+  username: "client1"

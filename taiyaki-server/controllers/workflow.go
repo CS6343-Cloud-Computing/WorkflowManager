@@ -43,3 +43,16 @@ func (repo *WorkflowRepo) UpdateWorkflow(workflow models.Workflow) {
 		panic(err)
 	}
 }
+
+// get workflow by uuid
+func (repo *WorkflowRepo) GetWorkflowByUserName(userName string) ([]models.Workflow, bool) {
+	var workflows []models.Workflow
+	err := models.GetWorkflowByUserName(repo.Db, &workflows, userName)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return workflows, false
+		}
+		panic(err)
+	}
+	return workflows, true
+}

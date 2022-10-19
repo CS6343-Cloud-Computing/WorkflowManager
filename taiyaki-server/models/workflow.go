@@ -9,7 +9,7 @@ type Workflow struct {
 	gorm.Model
 	ID         int
 	WorkflowID string
-	UserName   string
+	Username   string
 	Tasks      datatypes.JSON
 }
 
@@ -40,14 +40,23 @@ func GetWorkflow(db *gorm.DB, workflow *Workflow, id int) (err error) {
 	return nil
 }
 
-// //update worker
+// update workflow
 func UpdateWorkflow(db *gorm.DB, workflow *Workflow) (err error) {
 	db.Save(workflow)
 	return nil
 }
 
-// //delete Worker
+// delete workflow
 func DeleteWorkflow(db *gorm.DB, workflow *Workflow, id int) (err error) {
 	db.Where("id = ?", id).Delete(workflow)
+	return nil
+}
+
+// //get workflow by userName
+func GetWorkflowByUserName(db *gorm.DB, workflows *[]Workflow, userName string) (err error) {
+	err = db.Where("username = ?", userName).Find(workflows).Error
+	if err != nil {
+		return err
+	}
 	return nil
 }
