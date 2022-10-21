@@ -44,8 +44,9 @@ type APIConfig struct {
 
 type WorkflowTemplate struct {
 	Main struct {
-		Username string
-		Steps    []StepItem
+		Username         string
+		Steps            []StepItem
+		Expiry int
 	}
 }
 
@@ -88,6 +89,8 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	workflowDb := models.Workflow{}
 	workflowDb.Username = workflow.Main.Username
 
+	expiry := workflow.Main.Expiry
+	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry))
 	workflowId := uuid.New().String()
 	workflowDb.WorkflowID = workflowId
 
@@ -121,6 +124,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 
 		taskOb.Config = *config
 
+		taskDb.Expiry = workflowDb.Expiry
 		configJson, err := json.Marshal(config)
 		if err != nil {
 			panic(err)
@@ -162,7 +166,7 @@ func getTasksForUser(w http.ResponseWriter, r *http.Request, m *Manager.Manager)
 	userName := params["userName"]
 	fmt.Println("Getting workflows for user " + userName)
 	workflowCntrl := Controller.NewWorkflow(m.DB)
-	workflws,valid := workflowCntrl.GetWorkflowByUserName(userName)
+	workflws, valid := workflowCntrl.GetWorkflowByUserName(userName)
 	if !valid {
 		fmt.Println("Error getting workflows for user")
 		panic(valid)
@@ -257,7 +261,7 @@ func (c APIConfig) Start(wg *sync.WaitGroup, m *Manager.Manager) {
 	router.HandleFunc("/workflow/submit", func(w http.ResponseWriter, r *http.Request) { workflowHandler(w, r, taskCntrl, workflowCntrl, m) })
 	router.HandleFunc("/node/join", func(w http.ResponseWriter, r *http.Request) { nodeJoinHandler(w, r, workerCntrl, c) })
 	router.HandleFunc("/tasks/{taskID}", func(w http.ResponseWriter, r *http.Request) { deleteTask(w, r, taskCntrl) })
-	router.HandleFunc("/tasks/User/{userName}", func(w http.ResponseWriter, r *http.Request) { getTasksForUser(w, r, m)})
+	router.HandleFunc("/tasks/User/{userName}", func(w http.ResponseWriter, r *http.Request) { getTasksForUser(w, r, m) })
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         c.ServerIP + ":" + c.ServerPort,
@@ -277,6 +281,10 @@ func isWorkerPresent(m *Manager.Manager) bool {
 
 func SendWork(m *Manager.Manager) {
 
+	if !isWorkerPresent(m) {
+		log.Println("No worker is present")
+		return
+	}
 	if m.Pending.Len() > 0 && isWorkerPresent(m) {
 		nilWorkr := models.Worker{}
 		w := Scheduler.SelectWorker(m)

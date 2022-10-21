@@ -1,0 +1,15 @@
+main:
+  steps:
+    - name: "first_step"
+      image: "cs6343g7/twitterapi:midterm"
+      env: 
+        - "KafkaServer=192.168.1.82:9092"
+        - "ContainerName=first_step"
+      query: "#ukraine"
+    - name: "second_step"
+      image: "cs6343g7/sentimentanalyzer:midterm"
+      env: 
+        - "KafkaServer=192.168.1.82:9092"
+        - "ContainerName=second_step"
+  username: "client1"
+  expiry: 1000

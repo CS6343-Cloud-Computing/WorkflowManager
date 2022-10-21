@@ -20,3 +20,4 @@ main:
         - "TEST2=abcd"
       autoremove: false
   username: "client1"
+  expiry: 1000

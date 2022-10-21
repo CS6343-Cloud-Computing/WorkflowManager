@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -19,6 +21,7 @@ type Task struct {
 	Config        datatypes.JSON
 	Order         int
 	WorkerIpPort  string
+	Expiry        time.Time
 }
 
 // create a task

@@ -20,7 +20,11 @@ type DBConfig struct {
 var Db *gorm.DB
 
 func InitDb() *gorm.DB {
-	err := godotenv.Load("mysql/.env")
+	dirname, erro := os.UserHomeDir()
+	if erro != nil {
+		panic(erro)
+	}
+	err := godotenv.Load(dirname + "/.env")
 	if err != nil {
 		panic(err)
 	}

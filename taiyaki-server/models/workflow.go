@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -11,6 +13,7 @@ type Workflow struct {
 	WorkflowID string
 	Username   string
 	Tasks      datatypes.JSON
+	Expiry     time.Time
 }
 
 // create a workflow
