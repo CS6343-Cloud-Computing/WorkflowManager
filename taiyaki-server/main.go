@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 	apiserver "taiyaki-server/apiserver"
+	heartbeat "taiyaki-server/heartbeat"
 	Manager "taiyaki-server/manager"
 	models "taiyaki-server/models"
 	mysql "taiyaki-server/mysql"
@@ -41,6 +42,7 @@ func main() {
 			time.Sleep(15 * time.Second)
 		}
 	}()
+	go heartbeat.GetHeartBeat(m)
 
 	wg.Wait()
 

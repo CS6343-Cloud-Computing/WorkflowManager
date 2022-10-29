@@ -33,6 +33,15 @@ func GetWorkers(db *gorm.DB, workers *[]Worker) (err error) {
 	return nil
 }
 
+// get workers where status is active
+func GetActiveWorkers(db *gorm.DB, workers *[]Worker) (err error) {
+	err = db.Find(workers).Where("Status = ?", "Active").Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // //get Worker by id
 func GetWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
 	err = db.Where("worker_ip = ?", WorkerIP).First(worker).Error

@@ -37,7 +37,7 @@ func (repo *WorkerRepo) GetWorker(WorkerIP string) (models.Worker, bool) {
 }
 
 // get worker by ip address
-func (repo *WorkerRepo) GetWorkers() ([]models.Worker) {
+func (repo *WorkerRepo) GetWorkers() []models.Worker {
 	var workers []models.Worker
 	err := models.GetWorkers(repo.Db, &workers)
 	if err != nil {
@@ -46,10 +46,20 @@ func (repo *WorkerRepo) GetWorkers() ([]models.Worker) {
 	return workers
 }
 
-// update the worker
-func (repo *WorkerRepo) UpdateWorker(worker models.Worker) {
-	err := models.UpdateWorker(repo.Db, &worker)
+func (repo *WorkerRepo) GetActiveWorkers() []models.Worker {
+	var workers []models.Worker
+	err := models.GetActiveWorkers(repo.Db, &workers)
 	if err != nil {
 		panic(err)
 	}
+	return workers
+}
+
+// update the worker
+func (repo *WorkerRepo) UpdateWorker(worker models.Worker) (*models.Worker, error) {
+	err := models.UpdateWorker(repo.Db, &worker)
+	if err != nil {
+		return nil, err
+	}
+	return &worker, nil
 }
