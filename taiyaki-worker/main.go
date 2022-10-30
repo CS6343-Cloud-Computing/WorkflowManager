@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -16,6 +17,8 @@ import (
 
 	"time"
 
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/api/types/container"
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -182,6 +185,29 @@ func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
 	return resBody, nil
 }
 
+func syncDockerStatus(t task.Task){
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err!= nil {
+		panic(err)
+	}
+
+	statusCh, errCh := cli.ContainerWait(ctx, t.ContainerId, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.State = task.Failed
+		}
+	case <-statusCh:
+	}
+}
+
+func syncDockerStatuses(w *Worker){
+	for _,task := range w.Db {
+		syncDockerStatus(task)
+	}
+}
+
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -240,6 +266,7 @@ func main() {
 	worker := Worker{Queue: *queue.New(), Db: make(map[uuid.UUID]task.Task)}
 	go runTasks(&worker)
 	go worker.CollectStats()
+	go syncDockerStatuses(&worker)
 	api := Api{NodeIP: workerIP, NodePort: workerPort, Worker: &worker}
 
 	api.Start()
