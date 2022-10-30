@@ -198,17 +198,26 @@ func syncDockerStatus(t task.Task) {
 	statusCh, errCh := cli.ContainerWait(ctx, t.ContainerId, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
+		fmt.Println("___________________________ Error___________", err)
 		if err != nil {
 			t.State = task.Failed
 		}
-	case <-statusCh:
+	case st := <-statusCh:
+		fmt.Println("___________________________ Status___________", st.StatusCode)
+		if st.StatusCode != 0 {
+			t.State = task.Failed
+		}else {
+			t.State = task.Completed
+		}
 	}
 }
 
 func syncDockerStatuses(w *Worker) {
 	for {
+
 		for _, task := range w.Db {
-			syncDockerStatus(task)
+			fmt.Println("Inside Sync Docker Status")
+			go syncDockerStatus(task)
 		}
 		log.Println("Sleeping for 10 seconds before syncing docker status")
 		time.Sleep(10 * time.Second)
