@@ -22,6 +22,7 @@ import (
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"golang.org/x/exp/maps"
 )
 
 // Resp - Generic response
@@ -129,7 +130,8 @@ func (w *Worker) AddTask(t task.Task) {
 }
 
 func (w *Worker) GetTasks() []byte {
-	jsonStr, err := json.Marshal(w.Db)
+	values := maps.Values(w.Db)
+	jsonStr, err := json.Marshal(values)
 	if err != nil {
 		log.Printf("Error marshalling the queue\n")
 	}
