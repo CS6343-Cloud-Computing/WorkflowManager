@@ -57,6 +57,7 @@ func UpdateTask(db *gorm.DB, task *Task) (err error) {
 	return nil
 }
 
+
 // //delete task
 func DeleteTask(db *gorm.DB, task *Task, uuid string) (err error) {
 	db.Where("uuid = ?", uuid).Delete(task)
