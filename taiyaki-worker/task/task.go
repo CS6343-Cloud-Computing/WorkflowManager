@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/google/uuid"
-	
 )
 
 type State int
@@ -105,6 +105,7 @@ func (d *Docker) Run() DockerResult {
 		return DockerResult{Error: err}
 	}
 
+	fmt.Println("-------------------------container created with id " + resp.ID)
 	d.ContainerId = resp.ID
 	out, err := d.Client.ContainerLogs(ctx, resp.ID,
 		types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})

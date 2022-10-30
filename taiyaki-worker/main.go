@@ -215,13 +215,12 @@ func syncDockerStatus(t *task.Task) {
 
 func syncDockerStatuses(w *Worker) {
 	for {
-
 		for _, task := range w.Db {
 			fmt.Println("Inside Sync Docker Status")
 			go syncDockerStatus(&task)
 		}
 		log.Println("Sleeping for 10 seconds before syncing docker status")
-		time.Sleep(10 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 }
 
