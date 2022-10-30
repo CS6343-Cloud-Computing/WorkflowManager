@@ -105,11 +105,11 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		taskOb.ID = uuid.New()
 		taskDb.UUID = taskOb.ID.String()
 
-		taskDb.ContainerID = workflowTask.Name
-		taskOb.ContainerId = workflowTask.Name
+		taskDb.ContainerID = taskOb.ID.String()
+		taskOb.ContainerId = taskOb.ID.String()
 
-		taskDb.Name = workflowTask.Name
-		taskOb.Name = workflowTask.Name
+		taskDb.Name = taskOb.ID.String()
+		taskOb.Name = taskOb.ID.String()
 
 		taskDb.State = "Pending"
 		taskOb.State = task.Pending

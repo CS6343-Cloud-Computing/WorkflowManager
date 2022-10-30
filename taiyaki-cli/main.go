@@ -19,14 +19,14 @@ type Server struct {
 	ServerPort string
 }
 
-//Resp - Generic response
+// Resp - Generic response
 type Resp struct {
 	Result  string `json:"result"`
 	Success bool   `json:"success"`
 	Error   string `json:"error"`
 }
 
-var serverConfig = Server{"192.168.1.92", "8080"}
+var serverConfig = Server{"192.168.1.82", "8080"}
 
 func reqServer(endpoint string, reqBody io.Reader) (result []byte, err error) {
 	url := "http://" + serverConfig.ServerIP + ":" + serverConfig.ServerPort + "/" + endpoint
@@ -126,8 +126,8 @@ func main() {
 				Usage: "Commands for managing workflow",
 				Subcommands: []*cli.Command{
 					{
-						Name:  "submit",
-						Usage: "Submit workflow for execution",
+						Name:   "submit",
+						Usage:  "Submit workflow for execution",
 						Action: submitWorkflow,
 					},
 					{
