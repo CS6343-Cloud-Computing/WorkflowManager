@@ -1,7 +1,6 @@
 package heartbeat
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	Client "taiyaki-server/client"
@@ -15,36 +14,42 @@ func GetHeartBeat(m *Manager.Manager) {
 	workrCntrl := Controller.NewWorker(m.DB)
 
 	for {
-		workers := workrCntrl.GetActiveWorkers()
+		workers := workrCntrl.GetWorkers()
 
 		for _, worker := range workers {
 
-			fmt.Println("Worker:", worker)
+			fmt.Println("Worker heart:", worker)
 
-			go RequestWorker(workrCntrl, &worker)
+			RequestWorker(workrCntrl, &worker)
 		}
 
-		time.Sleep(10000)
+		time.Sleep(20 * time.Second)
 	}
-	
 
 }
 
 func RequestWorker(workCntrl *Controller.WorkerRepo, worker *models.Worker) {
-	resp, err := Client.ReqServer(worker.WorkerIP, worker.WorkerPort, "/heartbeat/", nil)
+	_, err := Client.ReqServer(worker.WorkerIP, worker.WorkerPort, "heartbeat/", nil)
 
 	if err != nil {
-		log.Fatal("Error in getting heartbeat of worker", err)
-	}
+		// log.Fatal("Error in getting heartbeat of worker", err)
 
-	respBody := Client.Resp{}
-	err = json.Unmarshal(resp, &respBody)
-	if err != nil {
-		log.Fatal("Unmarshal error while updating a worker to inactive", err)
 		worker.Status = "Inactive"
-		_, err := workCntrl.UpdateWorker(*worker)
-		if err != nil {
-			log.Fatal("Error while updating the Status to inactive", err)
+		_, err1 := workCntrl.UpdateWorker(*worker)
+		if err1 != nil {
+			log.Fatal("Error while updating the Status to inactive", err1)
 		}
 	}
+
+	// respBody := Client.Resp{}
+	// fmt.Println(resp)
+	// err = json.Unmarshal(resp, &respBody)
+	// if err != nil {
+	// 	log.Fatal("Unmarshal error while updating a worker to inactive", err)
+	// 	worker.Status = "Inactive"
+	// 	_, err1 := workCntrl.UpdateWorker(*worker)
+	// 	if err1 != nil {
+	// 		log.Fatal("Error while updating the Status to inactive", err1)
+	// 	}
+	// }
 }

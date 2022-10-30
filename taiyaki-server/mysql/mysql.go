@@ -35,7 +35,7 @@ func InitDb() *gorm.DB {
 
 func connectDB(c DBConfig) *gorm.DB {
 	fmt.Println("Connecting to the MySQL Server")
-	dsn := c.Username + ":" + c.Password + "@tcp" + "(" + c.Host + ":" + c.Port + ")/" + c.Database + "?" + "parseTime=true&loc=Local"
+	dsn := "aquaman:" + c.Password + "@tcp" + "(" + c.Host + ":" + c.Port + ")/" + c.Database + "?" + "parseTime=true&loc=Local"
 	fmt.Println("dsn : ", dsn)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
