@@ -65,3 +65,11 @@ func (a *Api) GetStatsHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	json.NewEncoder(w).Encode(a.Worker.Stats.CpuUsage())
 }
+
+func (a *Api) GetHeartbeat(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	resp := Resp{Result: "Server is running", Success: true, Error: ""}
+	json.NewEncoder(w).Encode(resp)
+}

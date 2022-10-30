@@ -26,6 +26,9 @@ func (a *Api) initRouter() {
 	a.Router.Route("/stats", func(r chi.Router) {
 		r.Get("/", a.GetStatsHandler)
 	})
+	a.Router.Route("/heartbeat", func(r chi.Router) {
+		r.Get("/", a.GetHeartbeat)
+	})
 }
 
 func (a *Api) Start() {
