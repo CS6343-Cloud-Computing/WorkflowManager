@@ -187,7 +187,7 @@ func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
 	return resBody, nil
 }
 
-func syncDockerStatus(t task.Task) {
+func syncDockerStatus(t *task.Task) {
 	fmt.Println("Syncing docker status for container id: " + t.ContainerId)
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -205,8 +205,9 @@ func syncDockerStatus(t task.Task) {
 	case st := <-statusCh:
 		fmt.Println("___________________________ Status___________", st.StatusCode)
 		if st.StatusCode != 0 {
+			fmt.Println("Updating state to ", st.StatusCode)
 			t.State = task.Failed
-		}else {
+		} else {
 			t.State = task.Completed
 		}
 	}
@@ -217,7 +218,7 @@ func syncDockerStatuses(w *Worker) {
 
 		for _, task := range w.Db {
 			fmt.Println("Inside Sync Docker Status")
-			go syncDockerStatus(task)
+			go syncDockerStatus(&task)
 		}
 		log.Println("Sleeping for 10 seconds before syncing docker status")
 		time.Sleep(10 * time.Second)
