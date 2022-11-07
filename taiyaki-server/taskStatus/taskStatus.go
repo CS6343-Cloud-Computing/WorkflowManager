@@ -26,7 +26,7 @@ func UpdateTasks(m *Manager.Manager) {
 
 }
 
-func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.WorkerRepo, worker *models.Worker) {
+func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.WorkerRepo, worker models.Worker) {
 	resp, err := Client.ReqServer(worker.WorkerIP, worker.WorkerPort, "heartbeat/", nil)
 
 	if err != nil {
@@ -44,8 +44,11 @@ func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.Worker
 	for _, ta := range respBody {
 		id := ta.ID
 
-		t := taskCntrl.GetTask(id)
+		t,valid := taskCntrl.GetTask(id.String())
 
+		if !valid{
+			panic(valid)
+		}
 		switch ta.State {
 		case 0:
 			t.State = "Pending"

@@ -63,3 +63,12 @@ func (repo *WorkerRepo) UpdateWorker(worker models.Worker) (*models.Worker, erro
 	}
 	return &worker, nil
 }
+
+func (repo *WorkerRepo) GetMinTaskWorkers() []models.Worker {
+	var workers []models.Worker
+	err := models.GetMinTaskWorkers(repo.Db, &workers)
+	if err != nil {
+		panic(err)
+	}
+	return workers
+}

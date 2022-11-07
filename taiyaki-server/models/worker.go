@@ -13,6 +13,7 @@ type Worker struct {
 	WorkerKey  string
 	Containers datatypes.JSON
 	Status     string
+	NumContainers	int
 }
 
 // create a worker
@@ -60,5 +61,13 @@ func UpdateWorker(db *gorm.DB, worker *Worker) (err error) {
 // //delete Worker
 func DeleteWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
 	db.Where("worker_ip = ?", WorkerIP).Delete(worker)
+	return nil
+}
+
+func GetMinTaskWorkers(db *gorm.DB, workers *[]Worker) (err error) {
+	err = db.Order("num_containers asc").Find(workers).Error
+	if err != nil {
+		return err
+	}
 	return nil
 }

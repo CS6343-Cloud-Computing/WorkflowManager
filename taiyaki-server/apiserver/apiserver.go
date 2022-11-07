@@ -194,6 +194,12 @@ func deleteTask(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.Ta
 		panic(valid)
 	}
 
+	if strings.Compare(taskObj.State, "Failed") == 0 || 
+		strings.Compare(taskObj.State,"Completed") ==0 {
+			fmt.Println("Task already in end state. Unable to delete. ")
+			return
+		}
+
 	workerIpPort := taskObj.WorkerIpPort
 	workerStr := strings.Split(workerIpPort, ":")
 
@@ -237,7 +243,7 @@ func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *Contro
 		return
 	}
 
-	worker = models.Worker{WorkerIP: joinReq.NodeIP, WorkerPort: joinReq.NodePort, WorkerKey: joinReq.JoinKey, Containers: datatypes.JSON{}, Status: "active"}
+	worker = models.Worker{WorkerIP: joinReq.NodeIP, WorkerPort: joinReq.NodePort, WorkerKey: joinReq.JoinKey, Containers: datatypes.JSON{}, Status: "active", NumContainers: 0}
 
 	fmt.Println(worker)
 
@@ -332,6 +338,10 @@ func SendWork(m *Manager.Manager) {
 			return
 		}
 
+		wrkrCntrl := Controller.NewWorker(m.DB)
+		w.NumContainers = w.NumContainers + 1
+		wrkrCntrl.UpdateWorker(w)
+		
 		taskUpdate.WorkerIpPort = workerIpPort
 		taskCntrl.UpdateTask(taskUpdate)
 		t := task.Task{}

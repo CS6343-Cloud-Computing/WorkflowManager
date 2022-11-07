@@ -25,9 +25,10 @@ type Stats struct {
 
 
 func SelectWorker(m *Manager.Manager) models.Worker {
-	db := m.DB
-	workrCntrl := Controller.NewWorker(db)
-	workers := workrCntrl.GetWorkers()
+	//db := m.DB
+	//workrCntrl := Controller.NewWorker(db)
+	//workers := workrCntrl.GetWorkers()
+	workers := WorkerWithMinTasks(m)
 	selectedWorker := models.Worker{}
 	threshold := 0.5
 	for _,worker := range workers{
@@ -40,6 +41,7 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 		if err!= nil {
 			//handle error
 		}
+
 		if usage<threshold{
 			fmt.Println("Got a useful worker", worker)
 			selectedWorker = worker
@@ -48,6 +50,14 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	}
 	println("No userful worker")
 	return selectedWorker
+}
+
+//returns the list of workers with minimum tasks in asc order
+func WorkerWithMinTasks(m *Manager.Manager) []models.Worker{
+	db := m.DB
+	workrCntrl := Controller.NewWorker(db)
+	workers := workrCntrl.GetMinTaskWorkers()
+	return workers
 }
 
 func ReqWorker(endpoint string,method string, reqBody io.Reader, workerIP string, workerPort string) (resBody []byte, err error) {
