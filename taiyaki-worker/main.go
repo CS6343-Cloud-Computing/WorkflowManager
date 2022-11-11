@@ -187,7 +187,7 @@ func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
 	return resBody, nil
 }
 
-func syncDockerStatus(t task.Task){
+func syncDockerStatus(t task.Task) task.State{
 	fmt.Println("Syncing docker status for container id: " + t.ContainerId)
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -214,14 +214,18 @@ func syncDockerStatus(t task.Task){
 		}
 	}
 	fmt.Println("Updated state to ", t.State)
+	return t.State
 }
 
 func syncDockerStatuses(w *Worker) {
 	for {
-		for _, task := range w.Db {
+		for key, task := range w.Db {
 			fmt.Println("Inside Sync Docker Status")
-			go syncDockerStatus(task)
-			fmt.Println("-----------------syncDockerStatuses: ",task.State)
+			state := syncDockerStatus(task)
+			fmt.Println("-----------------syncDockerStatuses: ",state)
+			task.State = state
+			fmt.Println("-----------------syncDockerStatuses task.State: ",task.State)
+			w.Db[key] = task
 		}
 		log.Println("Sleeping for 10 seconds before syncing docker status")
 		time.Sleep(3 * time.Second)
