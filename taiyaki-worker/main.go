@@ -282,7 +282,7 @@ func main() {
 	worker := Worker{Queue: *queue.New(), Db: make(map[uuid.UUID]task.Task)}
 	go runTasks(&worker)
 	go worker.CollectStats()
-	go syncDockerStatuses(&worker)
+	//go syncDockerStatuses(&worker)
 	api := Api{NodeIP: workerIP, NodePort: workerPort, Worker: &worker}
 
 	api.Start()
