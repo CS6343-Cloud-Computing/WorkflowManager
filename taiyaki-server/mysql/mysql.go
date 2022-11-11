@@ -20,22 +20,18 @@ type DBConfig struct {
 var Db *gorm.DB
 
 func InitDb() *gorm.DB {
-	dirname, erro := os.UserHomeDir()
-	if erro != nil {
-		panic(erro)
-	}
-	err := godotenv.Load(dirname + "/.env")
+	err := godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
-	dbConfig := DBConfig{os.Getenv("USERNAME"), os.Getenv("PASSWORD"), os.Getenv("HOST"), os.Getenv("PORT"), os.Getenv("DATABASENAME")}
+	dbConfig := DBConfig{os.Getenv("DBUSER"), os.Getenv("PASSWORD"), os.Getenv("HOST"), os.Getenv("PORT"), os.Getenv("DATABASENAME")}
 	Db = connectDB(dbConfig)
 	return Db
 }
 
 func connectDB(c DBConfig) *gorm.DB {
 	fmt.Println("Connecting to the MySQL Server")
-	dsn := "aquaman:" + c.Password + "@tcp" + "(" + c.Host + ":" + c.Port + ")/" + c.Database + "?" + "parseTime=true&loc=Local"
+	dsn := c.Username + ":" + c.Password + "@tcp" + "(" + c.Host + ":" + c.Port + ")/" + c.Database + "?" + "parseTime=true&loc=Local"
 	fmt.Println("dsn : ", dsn)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
