@@ -3,11 +3,12 @@ package scheduler
 import (
 	"bufio"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strconv"
+	//"strconv"
 	Controller "taiyaki-server/controllers"
 	Manager "taiyaki-server/manager"
 	"taiyaki-server/models"
@@ -22,7 +23,24 @@ type Stats struct {
 	LoadStats *linux.LoadAvg
 }
 
+func CpuUsage(s Stats) float64 {
 
+	idle := s.CpuStats.Idle + s.CpuStats.IOWait
+	nonIdle := s.CpuStats.User + s.CpuStats.Nice + s.CpuStats.System + s.CpuStats.IRQ + s.CpuStats.SoftIRQ + s.CpuStats.Steal
+	total := idle + nonIdle
+
+
+	if total == 0 {
+			return 0.00
+	}
+
+	return (float64(total) - float64(idle)) / float64(total)
+}
+
+
+func MemAvailablePercent(s Stats) float64 {
+	return float64(s.MemStats.MemAvailable) / float64(s.MemStats.MemTotal)
+}
 
 func SelectWorker(m *Manager.Manager) models.Worker {
 	//db := m.DB
@@ -30,19 +48,28 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	//workers := workrCntrl.GetWorkers()
 	workers := WorkerWithMinTasks(m)
 	selectedWorker := models.Worker{}
-	threshold := 0.5
+	cpuThreshold := 0.60
+	memThreshhold := 0.60
+
 	for _,worker := range workers{
-		respBody,err := ReqWorker("stats","GET",nil,worker.WorkerIP,worker.WorkerPort)
+		resp,err := ReqWorker("stats","GET",nil,worker.WorkerIP,worker.WorkerPort)
 		if err!= nil{
 			//handle error
 		}
-		fmt.Println(string(respBody))
-		usage,err := strconv.ParseFloat(string(respBody),64)
+		respBody := Stats{}
+		err = json.Unmarshal(resp, &respBody)
+
 		if err!= nil {
 			//handle error
 		}
 
-		if usage<threshold{
+		availMem := MemAvailablePercent(respBody)
+		cpuUsage := CpuUsage(respBody)
+
+		fmt.Println("------------------Available Mem : ", availMem)
+		fmt.Println("------------------CpuUsage CPU : ", cpuUsage)
+
+		if (cpuUsage<cpuThreshold && availMem<memThreshhold){
 			fmt.Println("Got a useful worker", worker)
 			selectedWorker = worker
 			break
