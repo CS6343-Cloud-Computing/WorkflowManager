@@ -68,9 +68,9 @@ func (w *Worker) RunTask() task.DockerResult {
 
 	if !isPresent {
 		taskPersisted = taskQueued
-		w.Db[taskQueued.ID] = taskQueued
+		//w.Db[taskQueued.ID] = taskQueued
 	}
-
+	
 	var result task.DockerResult
 	fmt.Println(task.ValidStateTransition(taskPersisted.State, taskQueued.State))
 	if true {
@@ -162,6 +162,26 @@ func runTasks(w *Worker) {
 	}
 }
 
+func runSyncDockerStatuses(w *Worker) {
+	for {
+		log.Println("syncing docker status")
+		if len(w.Db) > 0 {
+			log.Println("Map : ",w.Db)
+			for key, value := range w.Db {
+				fmt.Println("Inside Sync Docker Status")
+				log.Println("value : ",value)
+				state := syncDockerStatus(value)
+				fmt.Println("-----------------syncDockerStatuses: ", state)
+				value.State = state
+				fmt.Println("-----------------syncDockerStatuses task.State: ", value.State)
+				w.Db[key] = value
+			}
+		}
+		log.Println("syncing docker status sleeping for 3 seconds")
+		time.Sleep(3 * time.Second)
+	}
+}
+
 func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
 	url := "http://" + serverIP + ":" + serverPort + "/" + endpoint
 	c := &tls.Config{
@@ -187,7 +207,7 @@ func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
 	return resBody, nil
 }
 
-func syncDockerStatus(t task.Task) task.State{
+func syncDockerStatus(t task.Task) task.State {
 	fmt.Println("Syncing docker status for container id: " + t.ContainerId)
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -195,7 +215,12 @@ func syncDockerStatus(t task.Task) task.State{
 		panic(err)
 	}
 
+	fmt.Println("got the client for docker " + t.ContainerId)
+
 	statusCh, errCh := cli.ContainerWait(ctx, t.ContainerId, container.WaitConditionNotRunning)
+
+	log.Println("done with container wait: ", t.ContainerId)
+	
 	select {
 	case err := <-errCh:
 		fmt.Println("___________________________ Error___________", err)
@@ -215,21 +240,6 @@ func syncDockerStatus(t task.Task) task.State{
 	}
 	fmt.Println("Updated state to ", t.State)
 	return t.State
-}
-
-func syncDockerStatuses(w *Worker) {
-	for {
-		for key, task := range w.Db {
-			fmt.Println("Inside Sync Docker Status")
-			state := syncDockerStatus(task)
-			fmt.Println("-----------------syncDockerStatuses: ",state)
-			task.State = state
-			fmt.Println("-----------------syncDockerStatuses task.State: ",task.State)
-			w.Db[key] = task
-		}
-		log.Println("Sleeping for 10 seconds before syncing docker status")
-		time.Sleep(3 * time.Second)
-	}
 }
 
 func main() {
@@ -290,7 +300,9 @@ func main() {
 	worker := Worker{Queue: *queue.New(), Db: make(map[uuid.UUID]task.Task)}
 	go runTasks(&worker)
 	go worker.CollectStats()
-	go syncDockerStatuses(&worker)
+	
+	go runSyncDockerStatuses(&worker)
+
 	api := Api{NodeIP: workerIP, NodePort: workerPort, Worker: &worker}
 
 	api.Start()
