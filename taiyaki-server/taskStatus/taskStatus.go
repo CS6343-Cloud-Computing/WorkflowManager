@@ -27,7 +27,7 @@ func UpdateTasks(m *Manager.Manager) {
 }
 
 func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.WorkerRepo, worker models.Worker) {
-	resp, err := Client.ReqServer(worker.WorkerIP, worker.WorkerPort, "heartbeat/", nil)
+	resp, err := Client.ReqServer(worker.WorkerIP, worker.WorkerPort, "tasks/", nil)
 
 	if err != nil {
 		fmt.Println("Error while getting task status from a worker", err)
