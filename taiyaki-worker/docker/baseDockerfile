@@ -1,0 +1,14 @@
+# Base DockerFile
+FROM $1
+ENV user_cmd $2
+ENV consume_topic $3
+ENV kafka_server "192.168.1.82:9092"
+
+RUN apt-get update
+RUN apt-get install -y python3 python3-pip
+
+RUN pip3 install kafka-python
+
+COPY ./streamExecutor.py ./
+
+CMD ["python3", "./streamExecutor.py"]
