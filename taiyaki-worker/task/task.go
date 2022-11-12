@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"io"
 	"log"
+
 	"os"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/google/uuid"
+	"github.com/mitchellh/go-homedir"
 )
 
 type State int
@@ -69,16 +73,98 @@ type DockerResult struct {
 	Result      string
 }
 
-func (d *Docker) Run() DockerResult {
-	ctx := context.Background()
-	reader, err := d.Client.ImagePull(ctx, d.Task.Config.Image, types.ImagePullOptions{})
+func (d *Docker) modifyDockerFile(dockerBuildCtxDir string, image string) {
+	filePathNew, _ := homedir.Expand(dockerBuildCtxDir)
+	input, err := os.ReadFile(filePathNew + "/baseDockerfile")
 
 	if err != nil {
-		log.Printf("Error pulling the image %s: %v \n", d.Task.Config.Image, err)
-		return DockerResult{Error: err}
+		log.Fatalln(err)
 	}
 
-	io.Copy(os.Stdout, reader)
+	lines := strings.Split(string(input), "\n")
+
+	lines[1] = strings.Replace(lines[1], "$1", image, 1)
+	fmt.Println(lines[1])
+
+	lines[2] = strings.Replace(lines[2], "$2", "\""+d.Task.Config.Cmd[0]+"\"", 1)
+	fmt.Println(lines[2])
+
+	lines[3] = strings.Replace(lines[3], "$3", d.Task.ContainerId, 1)
+	fmt.Println(lines[3])
+
+	output := strings.Join(lines, "\n")
+
+	err = os.Remove(filePathNew + "/Dockerfile")
+	if os.IsNotExist(err) {
+		log.Println(err)
+	}
+	err = os.WriteFile(filePathNew+"/Dockerfile", []byte(output), 0644)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+}
+
+func (d *Docker) BuildImage(dockerBuildCtxDir, tagName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(300)*time.Second)
+	defer cancel()
+
+	dockerFileTarReader := GetContext(dockerBuildCtxDir)
+	fmt.Println(dockerFileTarReader)
+
+	resp, err := d.Client.ImageBuild(
+		ctx,
+		dockerFileTarReader,
+		types.ImageBuildOptions{
+			Dockerfile: "Dockerfile",
+			Tags:       []string{tagName},
+		}) //cli is the docker client instance created from the engine-api
+	defer resp.Body.Close()
+	_, err = io.Copy(os.Stdout, resp.Body)
+	if err != nil {
+		log.Fatal(err, " :unable to read image build response")
+	}
+	fmt.Println("BUILDING SUCCESSFULL:", os.Stdout, resp)
+	if err != nil {
+		log.Println(err, " :unable to build docker image")
+		return err
+	}
+	return nil
+}
+
+func GetContext(filePath string) io.Reader {
+	// Use homedir.Expand to resolve paths like '~/repos/myrepo'
+	filePathNew, _ := homedir.Expand(filePath)
+	ctx, _ := archive.TarWithOptions(filePathNew, &archive.TarOptions{})
+	return ctx
+}
+
+func (d *Docker) Run() DockerResult {
+	ctx := context.Background()
+
+	images, err := d.Client.ImageList(ctx, types.ImageListOptions{})
+	if err != nil {
+		fmt.Println(err)
+	}
+	isImagePresent := false
+	for _, image := range images {
+		imageName := strings.Split(image.RepoTags[0], ":")
+		if imageName[0] == "mod_" + d.Task.Config.Image {
+			fmt.Println("==============image name is same=============================================================")
+			isImagePresent = true
+			break
+		}
+
+	}
+
+	if !isImagePresent {
+		d.modifyDockerFile("~/WorkflowManager/taiyaki-worker/docker/", d.Task.Config.Image)
+		d.BuildImage("~/WorkflowManager/taiyaki-worker/docker", "mod_" + d.Task.Config.Image)
+	}
+	d.Task.Config.Image = "mod_" + d.Task.Config.Image
+	//imagepush
+
 	rp := container.RestartPolicy{
 		Name: d.Task.Config.RestartPolicy,
 	}
@@ -176,7 +262,7 @@ func NewConfig(task *Task) Config {
 	return *config
 }
 
-func NewDocker(config Config,t Task) *Docker {
+func NewDocker(config Config, t Task) *Docker {
 	d := new(Docker)
 	dc, _ := client.NewClientWithOpts(client.FromEnv)
 	d.Client = dc
