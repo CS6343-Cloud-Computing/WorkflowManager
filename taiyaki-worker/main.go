@@ -13,11 +13,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 	task "taiyaki-worker/task"
 
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
@@ -70,7 +73,7 @@ func (w *Worker) RunTask() task.DockerResult {
 		taskPersisted = taskQueued
 		//w.Db[taskQueued.ID] = taskQueued
 	}
-	
+
 	var result task.DockerResult
 	fmt.Println(task.ValidStateTransition(taskPersisted.State, taskQueued.State))
 	if true {
@@ -162,19 +165,61 @@ func runTasks(w *Worker) {
 	}
 }
 
+func findContainerInList(containerList []types.Container, containerId string) *types.Container {
+	for _, cntr := range containerList {
+		if cntr.ID == containerId {
+			return &cntr
+		}
+	}
+	return nil
+}
+
+func splitStatus(status string) int {
+	re := regexp.MustCompile(`\((.*?)\)`)
+	submatchall := re.FindAllString(status, -1)
+	for _, statusCode := range submatchall {
+		statusCode = strings.Trim(statusCode, "(")
+		statusCode = strings.Trim(statusCode, ")")
+		intStCode, err := strconv.Atoi(statusCode)
+		if err != nil {
+			log.Println(err)
+		}
+		return intStCode
+	}
+	return 0
+}
+
 func runSyncDockerStatuses(w *Worker) {
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		log.Println(err)
+	}
 	for {
-		log.Println("syncing docker status")
+		//log.Println("syncing docker status")
 		if len(w.Db) > 0 {
-			log.Println("Map : ",w.Db)
-			for key, value := range w.Db {
-				fmt.Println("Inside Sync Docker Status")
-				log.Println("value : ",value)
-				state := syncDockerStatus(value)
-				fmt.Println("-----------------syncDockerStatuses: ", state)
-				value.State = state
-				fmt.Println("-----------------syncDockerStatuses task.State: ", value.State)
-				w.Db[key] = value
+			//log.Println("syncing since queue has entries")
+			containerList, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true})
+			if err != nil {
+				log.Println(err)
+			}
+
+			//log.Println("list of containers running: ", containerList)
+			//log.Println("syncing since queue has entries before finding in the list")
+			for taskId, taskRunning := range w.Db {
+				cntr := findContainerInList(containerList, taskRunning.ContainerId)
+				if cntr.State == "exited" {
+					status := splitStatus(cntr.Status)
+					if status != 0 {
+						taskRunning.State = task.Failed
+						//fmt.Println("-----------------syncDockerStatuses task.State: ", status)
+						w.Db[taskId] = taskRunning
+					}else {
+						taskRunning.State = task.Completed
+						//fmt.Println("-----------------syncDockerStatuses task.State: ", status)
+						w.Db[taskId] = taskRunning
+					}
+				}
 			}
 		}
 		log.Println("syncing docker status sleeping for 3 seconds")
@@ -205,41 +250,6 @@ func reqServer(endpoint string, reqBody io.Reader) (resBody []byte, err error) {
 	resp.Body.Close()
 
 	return resBody, nil
-}
-
-func syncDockerStatus(t task.Task) task.State {
-	fmt.Println("Syncing docker status for container id: " + t.ContainerId)
-	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("got the client for docker " + t.ContainerId)
-
-	statusCh, errCh := cli.ContainerWait(ctx, t.ContainerId, container.WaitConditionNotRunning)
-
-	log.Println("done with container wait: ", t.ContainerId)
-	
-	select {
-	case err := <-errCh:
-		fmt.Println("___________________________ Error___________", err)
-		if err != nil {
-			fmt.Println("Updating state to ", task.Failed)
-			t.State = task.Failed
-		}
-	case st := <-statusCh:
-		fmt.Println("___________________________ Status___________", st.StatusCode)
-		if st.StatusCode != 0 {
-			fmt.Println("Updating state to ", st.StatusCode)
-			t.State = task.Failed
-		} else {
-			fmt.Println("Updating state to ", st.StatusCode)
-			t.State = task.Completed
-		}
-	}
-	fmt.Println("Updated state to ", t.State)
-	return t.State
 }
 
 func main() {
@@ -300,7 +310,7 @@ func main() {
 	worker := Worker{Queue: *queue.New(), Db: make(map[uuid.UUID]task.Task)}
 	go runTasks(&worker)
 	go worker.CollectStats()
-	
+
 	go runSyncDockerStatuses(&worker)
 
 	api := Api{NodeIP: workerIP, NodePort: workerPort, Worker: &worker}

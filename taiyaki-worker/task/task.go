@@ -149,18 +149,19 @@ func (d *Docker) Run() DockerResult {
 	}
 	isImagePresent := false
 	for _, image := range images {
+		if image.RepoTags == nil {
+			continue
+		}
 		imageName := strings.Split(image.RepoTags[0], ":")
-		if imageName[0] == "mod_" + d.Task.Config.Image {
+		if imageName[0] == "mod_"+d.Task.Config.Image {
 			fmt.Println("==============image name is same=============================================================")
 			isImagePresent = true
 			break
 		}
-
 	}
-
 	if !isImagePresent {
 		d.modifyDockerFile("~/WorkflowManager/taiyaki-worker/docker/", d.Task.Config.Image)
-		d.BuildImage("~/WorkflowManager/taiyaki-worker/docker", "mod_" + d.Task.Config.Image)
+		d.BuildImage("~/WorkflowManager/taiyaki-worker/docker", "mod_"+d.Task.Config.Image)
 	}
 	d.Task.Config.Image = "mod_" + d.Task.Config.Image
 	//imagepush

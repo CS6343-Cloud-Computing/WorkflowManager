@@ -1,7 +1,7 @@
 # Base DockerFile
-FROM cs6343g7/sentimentanalyzer:midterm
+FROM nginx
 ENV user_cmd "sudo test"
-ENV consume_topic e82b6d7b-d91c-4ef2-8c59-106bea790521
+ENV consume_topic 509d4e4c-8b6f-4fb3-bc40-4b4ee361c8ff
 ENV kafka_server "192.168.1.82:9092"
 
 RUN apt-get update
