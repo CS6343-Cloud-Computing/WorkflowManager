@@ -48,9 +48,9 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	//workers := workrCntrl.GetWorkers()
 	workers := WorkerWithMinTasks(m)
 	selectedWorker := models.Worker{}
-	cpuThreshold := 0.60
-	memThreshhold := 0.60
-
+	cpuThreshold := 0.90
+	memThreshhold := 0.90
+	workerFound := false
 	for _,worker := range workers{
 		resp,err := ReqWorker("stats","GET",nil,worker.WorkerIP,worker.WorkerPort)
 		if err!= nil{
@@ -72,10 +72,13 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 		if (cpuUsage<cpuThreshold && availMem<memThreshhold){
 			fmt.Println("Got a useful worker", worker)
 			selectedWorker = worker
+			workerFound = true
 			break
 		}
 	}
+	if !workerFound {
 	println("No userful worker")
+	}
 	return selectedWorker
 }
 
