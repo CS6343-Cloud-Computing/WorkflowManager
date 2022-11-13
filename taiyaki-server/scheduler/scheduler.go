@@ -77,7 +77,7 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 		}
 	}
 	if !workerFound {
-	println("No userful worker")
+	println("No useful worker")
 	}
 	return selectedWorker
 }

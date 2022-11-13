@@ -1,7 +1,7 @@
 # Base DockerFile
-FROM nginx
+FROM ubuntu
 ENV user_cmd "sudo test"
-ENV consume_topic 509d4e4c-8b6f-4fb3-bc40-4b4ee361c8ff
+ENV consume_topic 17c2e4b9-bd61-42c0-a69d-9281f36f4d2e
 ENV kafka_server "192.168.1.82:9092"
 
 RUN apt-get update

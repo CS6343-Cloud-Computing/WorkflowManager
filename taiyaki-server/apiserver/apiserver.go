@@ -291,7 +291,7 @@ func SendWork(m *Manager.Manager) {
 		log.Println("No worker is present")
 		return
 	}
-	if m.Pending.Len() > 0 && isWorkerPresent(m) {
+	if m.Pending.Len() > 0 {
 		nilWorkr := models.Worker{}
 		w := Scheduler.SelectWorker(m)
 		//if it returns no worker, return from the func

@@ -18,10 +18,9 @@ func UpdateTasks(m *Manager.Manager) {
 	taskCntrl := Controller.NewTask(m.DB)
 
 	for {
-		log.Println("update the states from worker")
+		log.Println("updating the states from worker")
 		workers := workrCntrl.GetWorkers()
 		for _, worker := range workers {
-			log.Println("update the states from worker---------------------")
 			getTaskDetails(taskCntrl, workrCntrl, worker)
 		}
 		time.Sleep(6 * time.Second)
