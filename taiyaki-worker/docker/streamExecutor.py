@@ -13,12 +13,21 @@ class streamExecutor:
         self.kafka_init()
 
     def kafka_init(self):
-        self.consumer = KafkaConsumer(
-            bootstrap_servers=self.kafkaServer, api_version=(0, 11, 5), auto_offset_reset="earliest", group_id=None
-        )
+
         self.producer = KafkaProducer(
             bootstrap_servers=self.kafkaServer, api_version=(0, 11, 5))
-        self.consumer.assign([TopicPartition(self.consumeTopic, 0)])
+        
+        while True:
+
+            try:
+                self.consumer = KafkaConsumer(
+                    bootstrap_servers=self.kafkaServer, api_version=(0, 11, 5), auto_offset_reset="earliest", group_id=None
+                )
+                
+                self.consumer.assign([TopicPartition(self.consumeTopic, 0)])
+                break
+            except:
+                print("Consumer not ready!!")
 
     def Exec(self):
         for msg in self.consumer:
