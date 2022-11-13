@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -132,14 +131,9 @@ func (w *Worker) AddTask(t task.Task) {
 	w.Queue.Enqueue(t)
 }
 
-func (w *Worker) GetTasks() []byte {
+func (w *Worker) GetTasks() []task.Task {
 	values := maps.Values(w.Db)
-	jsonStr, err := json.Marshal(values)
-	if err != nil {
-		log.Printf("Error marshalling the queue\n")
-	}
-
-	return jsonStr
+	return values
 }
 
 func (w *Worker) CollectStats() {

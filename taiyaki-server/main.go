@@ -10,6 +10,7 @@ import (
 	Manager "taiyaki-server/manager"
 	models "taiyaki-server/models"
 	mysql "taiyaki-server/mysql"
+	taskStatus "taiyaki-server/taskStatus"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -44,6 +45,7 @@ func main() {
 	}()
 	go heartbeat.GetHeartBeat(m)
 
+	go taskStatus.UpdateTasks(m)
 	wg.Wait()
 
 	//create a new manager
