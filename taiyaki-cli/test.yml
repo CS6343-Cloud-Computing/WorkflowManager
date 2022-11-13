@@ -1,7 +1,7 @@
 main:
   steps:
     - name: "first_step"
-      image: "nginx"
+      image: "ubuntu"
       cmd:
         - "sudo test"
         - "sudo run"
@@ -11,7 +11,7 @@ main:
       query: "#ukraine"
       autoremove: true
     - name: "second_step"
-      image: "nginx"
+      image: "alpine"
       cmd:
         - "sudo test"
         - "sudo run"

@@ -2,12 +2,18 @@ main:
   steps:
     - name: "first_step"
       image: "cs6343g7/twitterapi:midterm"
+      cmd:
+        - "sudo test"
+        - "sudo run"
       env: 
         - "KafkaServer=192.168.1.82:9092"
         - "ContainerName=first_step"
       query: "#ukraine"
     - name: "second_step"
       image: "cs6343g7/sentimentanalyzer:midterm"
+      cmd:
+        - "sudo test"
+        - "sudo run"
       env: 
         - "KafkaServer=192.168.1.82:9092"
         - "ContainerName=second_step"
