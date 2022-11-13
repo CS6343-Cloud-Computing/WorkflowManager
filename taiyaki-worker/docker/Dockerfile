@@ -1,7 +1,7 @@
 # Base DockerFile
-FROM ubuntu
-ENV user_cmd "sudo test"
-ENV consume_topic 17c2e4b9-bd61-42c0-a69d-9281f36f4d2e
+FROM cs6343g7/cleanarticle:finalterm
+ENV user_cmd "python3 ./cleanArticle.py"
+ENV consume_topic a79417ab-bd83-4874-b643-c9fbdebc4888
 ENV kafka_server "192.168.1.82:9092"
 
 RUN apt-get update
