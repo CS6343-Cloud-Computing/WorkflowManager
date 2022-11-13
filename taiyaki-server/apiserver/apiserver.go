@@ -44,9 +44,9 @@ type APIConfig struct {
 
 type WorkflowTemplate struct {
 	Main struct {
-		Username         string
-		Steps            []StepItem
-		Expiry int
+		Username string
+		Steps    []StepItem
+		Expiry   int
 	}
 }
 
@@ -194,11 +194,11 @@ func deleteTask(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.Ta
 		panic(valid)
 	}
 
-	if strings.Compare(taskObj.State, "Failed") == 0 || 
-		strings.Compare(taskObj.State,"Completed") ==0 {
-			fmt.Println("Task already in end state. Unable to delete. ")
-			return
-		}
+	if strings.Compare(taskObj.State, "Failed") == 0 ||
+		strings.Compare(taskObj.State, "Completed") == 0 {
+		fmt.Println("Task already in end state. Unable to delete. ")
+		return
+	}
 
 	workerIpPort := taskObj.WorkerIpPort
 	workerStr := strings.Split(workerIpPort, ":")
@@ -341,7 +341,7 @@ func SendWork(m *Manager.Manager) {
 		wrkrCntrl := Controller.NewWorker(m.DB)
 		w.NumContainers = w.NumContainers + 1
 		wrkrCntrl.UpdateWorker(w)
-		
+
 		taskUpdate.WorkerIpPort = workerIpPort
 		taskCntrl.UpdateTask(taskUpdate)
 		t := task.Task{}
@@ -355,8 +355,6 @@ func SendWork(m *Manager.Manager) {
 		log.Println("No work in the queue")
 	}
 }
-
-
 
 // func UpdateTasks(m *Manager.Manager) {
 // 	for _, worker := range m.Workers {

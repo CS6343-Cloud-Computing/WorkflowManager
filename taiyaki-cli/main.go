@@ -26,7 +26,7 @@ type Resp struct {
 	Error   string `json:"error"`
 }
 
-var serverConfig = Server{"192.168.1.92", "8080"}
+var serverConfig = Server{"192.168.1.82", "8080"}
 
 func reqServer(endpoint string, reqBody io.Reader) (result []byte, err error) {
 	url := "http://" + serverConfig.ServerIP + ":" + serverConfig.ServerPort + "/" + endpoint
