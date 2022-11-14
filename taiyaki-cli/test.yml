@@ -20,4 +20,5 @@ main:
         - "TEST2=abcd"
       autoremove: false
   username: "client1"
+  datasource: "twitter"
   expiry: 1000

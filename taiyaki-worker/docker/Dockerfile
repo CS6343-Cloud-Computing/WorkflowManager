@@ -1,7 +1,7 @@
 # Base DockerFile
-FROM ubuntu
-ENV user_cmd "sudo test"
-ENV consume_topic 17c2e4b9-bd61-42c0-a69d-9281f36f4d2e
+FROM cs6343g7/sentimentanalyzer:finalterm
+ENV user_cmd "python3 ./sentimentAnalyser.py"
+ENV consume_topic 85dd4132-06ba-4cde-a0f3-5c2bc22bb7b9
 ENV kafka_server "192.168.1.82:9092"
 
 RUN apt-get update

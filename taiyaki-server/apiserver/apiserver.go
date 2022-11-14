@@ -44,9 +44,10 @@ type APIConfig struct {
 
 type WorkflowTemplate struct {
 	Main struct {
-		Username string
-		Steps    []StepItem
-		Expiry   int
+		Username   string
+		Datasource string
+		Steps      []StepItem
+		Expiry     int
 	}
 }
 
@@ -93,6 +94,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry))
 	workflowId := uuid.New().String()
 	workflowDb.WorkflowID = workflowId
+	workflowDb.Datasource = workflow.Main.Datasource
 
 	var taskIds []string
 	for order, workflowTask := range workflow.Main.Steps {
@@ -154,7 +156,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		return
 	}
 	fmt.Println("Successfully got and saved the workflow")
-	resp := Resp{"Successfully got the workflow", true, ""}
+	resp := Resp{"Successfully got the workflow with id: " + workflowId, true, ""}
 	json.NewEncoder(w).Encode(resp)
 }
 
