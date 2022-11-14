@@ -202,13 +202,13 @@ func runSyncDockerStatuses(w *Worker) {
 			//log.Println("syncing since queue has entries before finding in the list")
 			for taskId, taskRunning := range w.Db {
 				cntr := findContainerInList(containerList, taskRunning.ContainerId)
-				if cntr.State == "exited" {
+				if cntr != nil && cntr.State == "exited" {
 					status := splitStatus(cntr.Status)
 					if status != 0 {
 						taskRunning.State = task.Failed
 						//fmt.Println("-----------------syncDockerStatuses task.State: ", status)
 						w.Db[taskId] = taskRunning
-					}else {
+					} else {
 						taskRunning.State = task.Completed
 						//fmt.Println("-----------------syncDockerStatuses task.State: ", status)
 						w.Db[taskId] = taskRunning
