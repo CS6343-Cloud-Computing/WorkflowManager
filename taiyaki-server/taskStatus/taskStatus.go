@@ -19,7 +19,7 @@ func UpdateTasks(m *Manager.Manager) {
 
 	for {
 		log.Println("updating the states from worker")
-		workers := workrCntrl.GetWorkers()
+		workers := workrCntrl.GetActiveWorkers()
 		for _, worker := range workers {
 			getTaskDetails(taskCntrl, workrCntrl, worker)
 		}
