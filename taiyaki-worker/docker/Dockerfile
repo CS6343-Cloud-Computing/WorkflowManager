@@ -1,7 +1,7 @@
 # Base DockerFile
 FROM alpine
 ENV user_cmd "sudo test"
-ENV consume_topic e1651144-326a-45d5-9cc7-c972d4972082
+ENV consume_topic 3cc2809e-31cc-4a22-a591-6ae2da08ac9e
 ENV kafka_server "192.168.1.82:9092"
 
 RUN apt-get update

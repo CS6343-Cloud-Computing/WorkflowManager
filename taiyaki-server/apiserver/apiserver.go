@@ -91,7 +91,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	workflowDb.Username = workflow.Main.Username
 
 	expiry := workflow.Main.Expiry
-	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry))
+	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry + 60))
 	workflowId := uuid.New().String()
 	workflowDb.WorkflowID = workflowId
 	workflowDb.Datasource = workflow.Main.Datasource
@@ -295,6 +295,11 @@ func SendWork(m *Manager.Manager) {
 	}
 	if m.Pending.Len() > 0 {
 		nilWorkr := models.Worker{}
+		//get the image name
+
+		//check if container with same image is Running
+
+		//check if stats of that worker fits criteria, then no need to send it to worker
 		w := Scheduler.SelectWorker(m)
 		//if it returns no worker, return from the func
 		if w.ID == nilWorkr.ID {

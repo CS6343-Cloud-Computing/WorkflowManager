@@ -32,7 +32,7 @@ func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.Worker
 	numContainers := worker.NumContainers
 	if numContainers > 0 {
 		resp,err := scheduler.ReqWorker("tasks","GET",nil,worker.WorkerIP,worker.WorkerPort)
-		log.Println(string(resp))
+		//log.Println(string(resp))
 		if err != nil {
 			fmt.Println("Error while getting task status from a worker", err)
 		}
@@ -67,7 +67,7 @@ func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.Worker
 			default:
 				t.State = "Running"
 			}
-			log.Println("Updating state for ", t)
+			//log.Println("Updating state for ", t)
 			taskCntrl.UpdateTask(t)
 		}
 	}

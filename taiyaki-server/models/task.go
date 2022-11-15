@@ -63,3 +63,20 @@ func DeleteTask(db *gorm.DB, task *Task, uuid string) (err error) {
 	db.Where("uuid = ?", uuid).Delete(task)
 	return nil
 }
+
+
+func GetTasksToDelete(db *gorm.DB, tasks *[]Task) (err error) {
+	err = db.Raw("select * from tasks where container_id in (select t.container_id  from tasks t where t.state = \"running\" group by t.container_id having max(t.expiry) < UTC_TIMESTAMP())").Scan(&tasks).Error
+	if err != nil{
+		return err
+	}
+	return nil
+}
+
+func GetRunningTasks(db *gorm.DB, tasks *[]Task) (err error) {
+	err = db.Where("state = ?", "Running").Find(tasks).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
