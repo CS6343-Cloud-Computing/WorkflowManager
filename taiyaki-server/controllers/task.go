@@ -71,3 +71,21 @@ func (repo *TaskRepo) GetRunningTasks() []models.Task {
 	}
 	return tasks
 }
+
+func (repo *TaskRepo) GetTaskWithSameImage(imageName string) models.Task {
+	var task models.Task
+	err := models.GetTaskWithSameImage(repo.Db, &task, imageName)
+	if err != nil {
+		//panic(err)
+	}
+	return task
+}
+
+func (repo *TaskRepo) GetOldestTaskForContainer(containerId string) models.Task {
+	var task models.Task
+	err := models.GetOldestTaskForContainer(repo.Db, &task, containerId)
+	if err != nil {
+		//panic(err)
+	}
+	return task
+}

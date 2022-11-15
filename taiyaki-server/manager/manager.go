@@ -56,14 +56,16 @@ func KillTask(m *Manager) {
 		log.Println("Got the tasks to delete: ", tasks)
 
 		for _, t := range tasks {
-			workerIpPort := strings.Split(t.WorkerIpPort, ":")
-			log.Println(" deleting: " + t.ContainerID + " workerIp: " + workerIpPort[0])
-			_, err := ReqWorker("tasks/"+t.ContainerID, "DELETE", nil, workerIpPort[0], workerIpPort[1])
+			oldestTask := taskCntrl.GetOldestTaskForContainer(t.ContainerID)
+			workerIpPort := strings.Split(oldestTask.WorkerIpPort, ":")
+			log.Println(" deleting: " + oldestTask.UUID + " workerIp: " + workerIpPort[0])
+			_, err := ReqWorker("tasks/"+oldestTask.UUID, "DELETE", nil, workerIpPort[0], workerIpPort[1])
 			if err != nil {
 				//handle error
+				log.Println("Error when deleting the task")
 			}
 			t.State = "Completed"
-			taskCntrl.UpdateTask(t)
+			taskCntrl.UpdateTask(oldestTask)
 		}
 		log.Println("Delete thread sleeping")
 		time.Sleep(6 * time.Second)
