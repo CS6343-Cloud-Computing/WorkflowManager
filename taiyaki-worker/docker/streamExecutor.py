@@ -40,6 +40,13 @@ class streamExecutor:
             output = str(userProcess.communicate()[0])
             print(msg)
             print(output, end='')
+            flow = str(msg.headers[0][1])
+            flow = flow.split("<===>")
+            pointer = int(msg.headers[1][1])
+
+            self.producer.send(flow[pointer],  key = msg.key,  value = msg.value,partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode())])
+
+            
 
 
 if __name__ == "__main__":
