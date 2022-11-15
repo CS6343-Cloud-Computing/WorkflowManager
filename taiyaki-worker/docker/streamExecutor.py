@@ -43,6 +43,10 @@ class streamExecutor:
             flow = str(msg.headers[0][1])
             flow = flow.split("<===>")
             pointer = int(msg.headers[1][1])
+            workflow = str(msg.headers[2][1])
+            if pointer >= len(flow):
+                self.producer.send(workflow+"-output",  key = msg.key,  value = msg.value,partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode())])
+                continue
 
             self.producer.send(flow[pointer],  key = msg.key,  value = msg.value,partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode())])
 
