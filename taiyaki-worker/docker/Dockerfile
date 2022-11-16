@@ -1,7 +1,8 @@
 # Base DockerFile
-FROM ubuntu
-ENV user_cmd "sudo test"
-ENV consume_topic c329a42c-5c3a-4d39-97d9-23e4bd551fd3
+FROM cs6343g7/classifier:finalterm
+ENV user_cmd "python3 ./predict.py"
+ENV consume_topic 0e309204-05dc-4562-86ad-46e9c807f12c
+ENV PYTHONUNBUFFERED=2
 ENV kafka_server "192.168.1.82:9092"
 
 RUN apt-get update
@@ -11,4 +12,4 @@ RUN pip3 install kafka-python
 
 COPY ./streamExecutor.py ./
 
-CMD ["python3", "./streamExecutor.py"]
+CMD ["python3","-u", "./streamExecutor.py"]

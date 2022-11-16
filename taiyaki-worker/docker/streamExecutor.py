@@ -30,8 +30,10 @@ class streamExecutor:
                 print("Consumer not ready!!")
 
     def Exec(self):
+        print("Started stream executor")
         for msg in self.consumer:
-            data = msg.value
+            # data = "\"" + str(msg.value) + "\""
+            data = msg.value.decode("utf-8")
             print(data)
             cmds = self.userCMD.split()
             cmds.append(data)
@@ -40,15 +42,15 @@ class streamExecutor:
             output = str(userProcess.communicate()[0])
             print(msg)
             print(output, end='')
-            flow = str(msg.headers[0][1])
+            flow = msg.headers[0][1].decode("utf-8")
             flow = flow.split("<===>")
             pointer = int(msg.headers[1][1])
-            workflow = str(msg.headers[2][1])
+            workflow = msg.headers[2][1].decode("utf-8")
             if pointer >= len(flow):
-                self.producer.send(workflow+"-output",  key = msg.key,  value = msg.value,partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode())])
+                self.producer.send(workflow+"-output",  key = msg.key,  value = output.encode('utf-8'),partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode('utf-8')),('workflow', workflow.encode('utf-8'))])
                 continue
 
-            self.producer.send(flow[pointer],  key = msg.key,  value = msg.value,partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode())])
+            self.producer.send(flow[pointer],  key = msg.key,  value = output.encode('utf-8'),partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode('utf-8')),('workflow', workflow.encode('utf-8'))])
 
             
 
