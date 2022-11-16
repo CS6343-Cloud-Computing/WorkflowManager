@@ -2,6 +2,7 @@ package main
 
 import (
 	//"fmt"
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -34,7 +35,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	api := apiserver.APIConfig{ServerIP: serverIP, ServerPort: serverPort, WorkerJoinKey: workerJoinKey}
-
+	fmt.Print("hello")
 	go api.Start(&wg, m)
 	go func() {
 		for {
