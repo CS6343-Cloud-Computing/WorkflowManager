@@ -62,8 +62,7 @@ func KillTask(m *Manager) {
 			_, err := ReqWorker("tasks/"+oldestTask.UUID, "DELETE", nil, workerIpPort[0], workerIpPort[1])
 			if err != nil {
 				//handle error
-				log.Println("Error when deleting the task")
-			}
+				log.Println("Error when deleting the task")			}
 			t.State = "Completed"
 			taskCntrl.UpdateTask(oldestTask)
 		}

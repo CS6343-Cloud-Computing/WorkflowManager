@@ -26,6 +26,10 @@ func main() {
 	serverPort := os.Getenv("SERVER_PORT")
 	workerJoinKey := os.Getenv("WORKER_JOIN_KEY")
 	db := mysql.InitDb()
+	db.Exec("DROP TABLE if exists workers")
+	db.Exec("DROP TABLE if exists tasks")
+	db.Exec("DROP TABLE if exists workflows")
+
 	db.AutoMigrate(&models.Worker{})
 	db.AutoMigrate(&models.Task{})
 	db.AutoMigrate(&models.Workflow{})

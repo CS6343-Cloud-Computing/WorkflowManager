@@ -89,7 +89,7 @@ func GetTaskWithSameImage(db *gorm.DB, task *Task, imageName string) (err error)
 }
 
 func GetOldestTaskForContainer(db *gorm.DB, task *Task, containerId string) (err error) {
-	err = db.Where("container_id = ?", containerId).Order("created_on").First(task).Error
+	err = db.Where("container_id = ?", containerId).Order("created_at").First(task).Error
 	if err != nil {
 		return err
 	}

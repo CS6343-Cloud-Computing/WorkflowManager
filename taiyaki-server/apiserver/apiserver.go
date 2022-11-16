@@ -91,7 +91,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	workflowDb.Username = workflow.Main.Username
 
 	expiry := workflow.Main.Expiry
-	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry + 60))
+	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry+60))
 	workflowId := uuid.New().String()
 	workflowDb.WorkflowID = workflowId
 	workflowDb.Datasource = workflow.Main.Datasource
@@ -157,7 +157,8 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		return
 	}
 	fmt.Println("Successfully got and saved the workflow")
-	resp := Resp{"Successfully got the workflow with id: " + workflowId, true, ""}
+	s := "Successfully got the workflow with id: " + workflowId + " .For output: http://10.176.128.170:9000/topics/" + workflowId + "-output"
+	resp := Resp{s, true, ""}
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -296,7 +297,7 @@ func SendWork(m *Manager.Manager) {
 	}
 	if m.Pending.Len() > 0 {
 		nilWorkr := models.Worker{}
-		
+		nilTask := models.Task{}
 		w := Scheduler.SelectWorker(m)
 		//if it returns no worker, return from the func
 		if w.ID == nilWorkr.ID {
@@ -322,16 +323,18 @@ func SendWork(m *Manager.Manager) {
 		//check if container with same image is Running
 		taskU := taskCntrl.GetTaskWithSameImage(image)
 		//check if stats of that worker fits criteria, then no need to send it to worker
-		validWorkerForPersistence :=  Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
-		if(validWorkerForPersistence) {
-			taskUpdate.State = "Running"
-			taskUpdate.WorkerIpPort = taskU.WorkerIpPort
-			taskCntrl.UpdateTask(taskUpdate)
-			//update num containers in worker
-			workerU,_ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
-			workerU.NumContainers = workerU.NumContainers + 1
-			wrkrCntrl.UpdateWorker(workerU)
-			return
+		if taskU.UUID != nilTask.UUID {
+			validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
+			if validWorkerForPersistence {
+				taskUpdate.State = "Running"
+				taskUpdate.WorkerIpPort = taskU.WorkerIpPort
+				taskCntrl.UpdateTask(taskUpdate)
+				//update num containers in worker
+				workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
+				workerU.NumContainers = workerU.NumContainers + 1
+				wrkrCntrl.UpdateWorker(workerU)
+				return
+			}
 		}
 
 		data, err := json.Marshal(te)
@@ -367,7 +370,7 @@ func SendWork(m *Manager.Manager) {
 
 		taskUpdate.WorkerIpPort = workerIpPort
 		taskCntrl.UpdateTask(taskUpdate)
-		
+
 		t := task.Task{}
 
 		err = d.Decode(&t)
