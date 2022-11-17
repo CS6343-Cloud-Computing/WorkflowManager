@@ -44,14 +44,18 @@ func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.Worker
 		if err != nil {
 			fmt.Println(" Unmarshal error in get task status", err)
 		}
-
+		
 		for _, ta := range respBody {
 			id := ta.ID
 
 			t, valid := taskCntrl.GetTask(id.String())
 
 			if !valid {
-				panic(valid)
+				log.Println("valid in getTaskDetails", valid)
+				//panic(valid)
+			}
+			if(t.State == "Failed" || t.State == "Completed"){
+				continue;
 			}
 			switch ta.State {
 			case 0:

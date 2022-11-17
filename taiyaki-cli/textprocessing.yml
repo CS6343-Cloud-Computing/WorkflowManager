@@ -21,4 +21,4 @@ main:
       cmd:
         - "python3 ./predict.py"
   username: "client1"
-  expiry: 1000
+  expiry: 240

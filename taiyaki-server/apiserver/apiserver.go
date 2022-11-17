@@ -326,6 +326,7 @@ func SendWork(m *Manager.Manager) {
 		if taskU.UUID != nilTask.UUID {
 			validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
 			if validWorkerForPersistence {
+				taskUpdate.ContainerID = taskU.ContainerID
 				taskUpdate.State = "Running"
 				taskUpdate.WorkerIpPort = taskU.WorkerIpPort
 				taskCntrl.UpdateTask(taskUpdate)
