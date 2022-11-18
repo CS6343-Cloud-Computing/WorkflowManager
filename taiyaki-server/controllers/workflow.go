@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"log"
 	"taiyaki-server/models"
 
 	"gorm.io/gorm"
@@ -19,7 +20,8 @@ func NewWorkflow(db *gorm.DB) *WorkflowRepo {
 func (repo *WorkflowRepo) CreateWorkflow(workflow models.Workflow) {
 	err := models.CreateWorkflow(repo.Db, &workflow)
 	if err != nil {
-		panic(err)
+		//panic(err)
+		log.Println("Error in createWorkflow")
 	}
 }
 
@@ -31,7 +33,8 @@ func (repo *WorkflowRepo) GetWorkflow(id int) (models.Workflow, bool) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return workflow, false
 		}
-		panic(err)
+		//panic(err)
+		log.Println("Error in GetWorkflow for id: ",id)
 	}
 	return workflow, true
 }
@@ -40,7 +43,8 @@ func (repo *WorkflowRepo) GetWorkflow(id int) (models.Workflow, bool) {
 func (repo *WorkflowRepo) UpdateWorkflow(workflow models.Workflow) {
 	err := models.UpdateWorkflow(repo.Db, &workflow)
 	if err != nil {
-		panic(err)
+		//panic(err)
+		log.Println("Error in UpdateWorkflow")
 	}
 }
 
@@ -52,7 +56,8 @@ func (repo *WorkflowRepo) GetWorkflowByUserName(userName string) ([]models.Workf
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return workflows, false
 		}
-		panic(err)
+		//panic(err)
+		log.Println("Error in GetWorkflowByUserName for ", userName)
 	}
 	return workflows, true
 }

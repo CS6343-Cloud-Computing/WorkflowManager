@@ -84,7 +84,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	workflow := WorkflowTemplate{}
 	err := yaml.Unmarshal(reqBytes, &workflow)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	workflowDb := models.Workflow{}
@@ -130,7 +130,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		taskDb.Expiry = workflowDb.Expiry
 		configJson, err := json.Marshal(config)
 		if err != nil {
-			panic(err)
+			log.Println(err)
 		}
 		taskDb.Config = configJson
 		taskCntrl.CreateTask(taskDb)
@@ -145,7 +145,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	}
 	taskIdsJson, err := json.Marshal(taskIds)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	workflowDb.Tasks = taskIdsJson
 
@@ -173,7 +173,7 @@ func getTasksForUser(w http.ResponseWriter, r *http.Request, m *Manager.Manager)
 	workflws, valid := workflowCntrl.GetWorkflowByUserName(userName)
 	if !valid {
 		fmt.Println("Error getting workflows for user")
-		panic(valid)
+		log.Println(valid)
 	}
 	fmt.Println(workflws, " hello")
 	//find the workflow id
@@ -195,7 +195,7 @@ func deleteTask(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.Ta
 	taskObj, valid := taskCntrl.GetTask(taskID)
 	if !valid {
 		fmt.Println("Error while getting taskObj")
-		panic(valid)
+		log.Println(valid)
 	}
 
 	if strings.Compare(taskObj.State, "Failed") == 0 ||
@@ -213,10 +213,10 @@ func deleteTask(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.Ta
 	respBody, err1 := Scheduler.ReqWorker(endPoint, "DELETE", nil, workerStr[0], workerStr[1])
 	if err1 != nil {
 		fmt.Println("error while serving the request to worker")
-		panic(err1)
+		log.Println(err1)
 	}
 
-	println(string(respBody))
+	log.Println(string(respBody))
 }
 
 func nodeJoinHandler(w http.ResponseWriter, r *http.Request, workerCntrl *Controller.WorkerRepo, config APIConfig) {

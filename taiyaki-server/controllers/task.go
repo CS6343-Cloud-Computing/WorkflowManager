@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"log"
 	"taiyaki-server/models"
 
 	"gorm.io/gorm"
@@ -19,7 +20,7 @@ func NewTask(db *gorm.DB) *TaskRepo {
 func (repo *TaskRepo) CreateTask(task models.Task) {
 	err := models.CreateTask(repo.Db, &task)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }
 
@@ -31,7 +32,7 @@ func (repo *TaskRepo) GetTask(uuid string) (models.Task, bool) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return task, false
 		}
-		panic(err)
+		log.Println(err)
 	}
 	return task, true
 }
@@ -40,7 +41,7 @@ func (repo *TaskRepo) GetTasks() []models.Task {
 	var tasks []models.Task
 	err := models.GetTasks(repo.Db, &tasks)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	return tasks
 }
@@ -49,7 +50,7 @@ func (repo *TaskRepo) GetTasks() []models.Task {
 func (repo *TaskRepo) UpdateTask(task models.Task) {
 	err := models.UpdateTask(repo.Db, &task)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }
 
@@ -57,11 +58,10 @@ func (repo *TaskRepo) GetTasksToDelete() []models.Task {
 	var tasks []models.Task
 	err := models.GetTasksToDelete(repo.Db, &tasks)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	return tasks
 }
-
 
 func (repo *TaskRepo) GetRunningTasks() []models.Task {
 	var tasks []models.Task

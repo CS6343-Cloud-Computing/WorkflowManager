@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"log"
 	"taiyaki-server/models"
 
 	"gorm.io/gorm"
@@ -19,7 +20,7 @@ func NewWorker(db *gorm.DB) *WorkerRepo {
 func (repo *WorkerRepo) CreateWorker(worker models.Worker) {
 	err := models.CreateWorker(repo.Db, &worker)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }
 
@@ -31,7 +32,7 @@ func (repo *WorkerRepo) GetWorker(WorkerIP string) (models.Worker, bool) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return worker, false
 		}
-		panic(err)
+		log.Println(err)
 	}
 	return worker, true
 }
@@ -41,7 +42,8 @@ func (repo *WorkerRepo) GetWorkers() []models.Worker {
 	var workers []models.Worker
 	err := models.GetWorkers(repo.Db, &workers)
 	if err != nil {
-		panic(err)
+		//panic(err)
+		log.Println("Error in GetWorkers")
 	}
 	return workers
 }
@@ -50,7 +52,8 @@ func (repo *WorkerRepo) GetActiveWorkers() []models.Worker {
 	var workers []models.Worker
 	err := models.GetActiveWorkers(repo.Db, &workers)
 	if err != nil {
-		panic(err)
+		//panic(err)
+		log.Println("Error in GetActiveWorkers")
 	}
 	return workers
 }
@@ -68,7 +71,8 @@ func (repo *WorkerRepo) GetMinTaskWorkers() []models.Worker {
 	var workers []models.Worker
 	err := models.GetMinTaskWorkers(repo.Db, &workers)
 	if err != nil {
-		panic(err)
+		//panic(err)
+		log.Println("Error in GetMinTaskWorkers")
 	}
 	return workers
 }
