@@ -44,9 +44,10 @@ type APIConfig struct {
 
 type WorkflowTemplate struct {
 	Main struct {
-		Username string
-		Steps    []StepItem
-		Expiry   int
+		Username   string
+		Datasource string
+		Steps      []StepItem
+		Expiry     int
 	}
 }
 
@@ -90,9 +91,10 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	workflowDb.Username = workflow.Main.Username
 
 	expiry := workflow.Main.Expiry
-	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry))
+	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry+60))
 	workflowId := uuid.New().String()
 	workflowDb.WorkflowID = workflowId
+	workflowDb.Datasource = workflow.Main.Datasource
 
 	var taskIds []string
 	for order, workflowTask := range workflow.Main.Steps {
@@ -123,6 +125,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		config.Query = workflowTask.Query
 
 		taskOb.Config = *config
+		taskDb.Image = taskOb.Config.Image
 
 		taskDb.Expiry = workflowDb.Expiry
 		configJson, err := json.Marshal(config)
@@ -154,7 +157,8 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		return
 	}
 	fmt.Println("Successfully got and saved the workflow")
-	resp := Resp{"Successfully got the workflow", true, ""}
+	s := "Successfully got the workflow with id: " + workflowId + " .For output: http://10.176.128.170:9000/topics/" + workflowId + "-output"
+	resp := Resp{s, true, ""}
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -293,6 +297,7 @@ func SendWork(m *Manager.Manager) {
 	}
 	if m.Pending.Len() > 0 {
 		nilWorkr := models.Worker{}
+		nilTask := models.Task{}
 		w := Scheduler.SelectWorker(m)
 		//if it returns no worker, return from the func
 		if w.ID == nilWorkr.ID {
@@ -309,6 +314,29 @@ func SendWork(m *Manager.Manager) {
 		taskCntrl := Controller.NewTask(m.DB)
 		taskUpdate, _ := taskCntrl.GetTask(te.Task.ID.String())
 		taskUpdate.State = "Scheduled"
+
+		wrkrCntrl := Controller.NewWorker(m.DB)
+
+		//For persistance
+		//get the image name
+		image := taskUpdate.Image
+		//check if container with same image is Running
+		taskU := taskCntrl.GetTaskWithSameImage(image)
+		//check if stats of that worker fits criteria, then no need to send it to worker
+		if taskU.UUID != nilTask.UUID {
+			validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
+			if validWorkerForPersistence {
+				taskUpdate.ContainerID = taskU.ContainerID
+				taskUpdate.State = "Running"
+				taskUpdate.WorkerIpPort = taskU.WorkerIpPort
+				taskCntrl.UpdateTask(taskUpdate)
+				//update num containers in worker
+				workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
+				workerU.NumContainers = workerU.NumContainers + 1
+				wrkrCntrl.UpdateWorker(workerU)
+				return
+			}
+		}
 
 		data, err := json.Marshal(te)
 		if err != nil {
@@ -338,13 +366,14 @@ func SendWork(m *Manager.Manager) {
 			return
 		}
 
-		wrkrCntrl := Controller.NewWorker(m.DB)
 		w.NumContainers = w.NumContainers + 1
 		wrkrCntrl.UpdateWorker(w)
 
 		taskUpdate.WorkerIpPort = workerIpPort
 		taskCntrl.UpdateTask(taskUpdate)
+
 		t := task.Task{}
+
 		err = d.Decode(&t)
 		if err != nil {
 			fmt.Printf("Error decoding response: %s\n", err.Error())

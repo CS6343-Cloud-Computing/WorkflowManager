@@ -217,7 +217,7 @@ func (d *Docker) Stop() DockerResult {
 		"Attempting to stop container %v", d.ContainerId)
 	err := d.Client.ContainerStop(ctx, d.ContainerId, nil)
 	if err != nil {
-		panic(err)
+		log.Println("Container already stopped")
 	}
 
 	removeOptions := types.ContainerRemoveOptions{
@@ -232,7 +232,7 @@ func (d *Docker) Stop() DockerResult {
 		removeOptions,
 	)
 	if err != nil {
-		panic(err)
+		log.Println("Container already removed")
 	}
 	return DockerResult{Action: "stop", Result: "success", Error: nil}
 }

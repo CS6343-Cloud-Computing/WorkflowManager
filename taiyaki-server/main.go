@@ -2,6 +2,7 @@ package main
 
 import (
 	//"fmt"
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	models "taiyaki-server/models"
 	mysql "taiyaki-server/mysql"
 	taskStatus "taiyaki-server/taskStatus"
+
 	"time"
 
 	"github.com/joho/godotenv"
@@ -25,6 +27,10 @@ func main() {
 	serverPort := os.Getenv("SERVER_PORT")
 	workerJoinKey := os.Getenv("WORKER_JOIN_KEY")
 	db := mysql.InitDb()
+	db.Exec("DROP TABLE if exists workers")
+	db.Exec("DROP TABLE if exists tasks")
+	db.Exec("DROP TABLE if exists workflows")
+
 	db.AutoMigrate(&models.Worker{})
 	db.AutoMigrate(&models.Task{})
 	db.AutoMigrate(&models.Workflow{})
@@ -33,7 +39,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	api := apiserver.APIConfig{ServerIP: serverIP, ServerPort: serverPort, WorkerJoinKey: workerJoinKey}
-
+	fmt.Print("hello")
 	go api.Start(&wg, m)
 	go func() {
 		for {
@@ -46,6 +52,8 @@ func main() {
 	go heartbeat.GetHeartBeat(m)
 
 	go taskStatus.UpdateTasks(m)
+
+	go Manager.KillTask(m)
 	wg.Wait()
 
 	//create a new manager

@@ -12,6 +12,7 @@ type Workflow struct {
 	ID         int
 	WorkflowID string
 	Username   string
+	Datasource	string
 	Tasks      datatypes.JSON
 	Expiry     time.Time
 }

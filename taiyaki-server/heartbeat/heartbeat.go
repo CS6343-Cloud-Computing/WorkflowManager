@@ -14,7 +14,7 @@ func GetHeartBeat(m *Manager.Manager) {
 	workrCntrl := Controller.NewWorker(m.DB)
 
 	for {
-		workers := workrCntrl.GetWorkers()
+		workers := workrCntrl.GetActiveWorkers()
 
 		for _, worker := range workers {
 

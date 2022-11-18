@@ -19,7 +19,7 @@ func UpdateTasks(m *Manager.Manager) {
 
 	for {
 		log.Println("updating the states from worker")
-		workers := workrCntrl.GetWorkers()
+		workers := workrCntrl.GetActiveWorkers()
 		for _, worker := range workers {
 			getTaskDetails(taskCntrl, workrCntrl, worker)
 		}
@@ -32,7 +32,7 @@ func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.Worker
 	numContainers := worker.NumContainers
 	if numContainers > 0 {
 		resp,err := scheduler.ReqWorker("tasks","GET",nil,worker.WorkerIP,worker.WorkerPort)
-		log.Println(string(resp))
+		//log.Println(string(resp))
 		if err != nil {
 			fmt.Println("Error while getting task status from a worker", err)
 		}
@@ -44,14 +44,18 @@ func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.Worker
 		if err != nil {
 			fmt.Println(" Unmarshal error in get task status", err)
 		}
-
+		
 		for _, ta := range respBody {
 			id := ta.ID
 
 			t, valid := taskCntrl.GetTask(id.String())
 
 			if !valid {
-				panic(valid)
+				log.Println("valid in getTaskDetails", valid)
+				//panic(valid)
+			}
+			if(t.State == "Failed" || t.State == "Completed"){
+				continue;
 			}
 			switch ta.State {
 			case 0:
@@ -67,7 +71,7 @@ func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.Worker
 			default:
 				t.State = "Running"
 			}
-			log.Println("Updating state for ", t)
+			//log.Println("Updating state for ", t)
 			taskCntrl.UpdateTask(t)
 		}
 	}

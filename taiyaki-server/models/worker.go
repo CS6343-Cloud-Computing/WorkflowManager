@@ -36,7 +36,7 @@ func GetWorkers(db *gorm.DB, workers *[]Worker) (err error) {
 
 // get workers where status is active
 func GetActiveWorkers(db *gorm.DB, workers *[]Worker) (err error) {
-	err = db.Find(workers).Where("Status = ?", "Active").Error
+	err = db.Where("status = ?", "active").Find(workers).Error
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func DeleteWorker(db *gorm.DB, worker *Worker, WorkerIP string) (err error) {
 }
 
 func GetMinTaskWorkers(db *gorm.DB, workers *[]Worker) (err error) {
-	err = db.Where("Status = ?", "Active").Order("num_containers asc").Find(workers).Error
+	err = db.Where("status = ?", "active").Order("num_containers asc").Find(workers).Error
 	if err != nil {
 		return err
 	}

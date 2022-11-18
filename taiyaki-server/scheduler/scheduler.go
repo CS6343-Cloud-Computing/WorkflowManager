@@ -8,6 +8,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
+
 	//"strconv"
 	Controller "taiyaki-server/controllers"
 	Manager "taiyaki-server/manager"
@@ -40,6 +42,34 @@ func CpuUsage(s Stats) float64 {
 
 func MemAvailablePercent(s Stats) float64 {
 	return float64(s.MemStats.MemAvailable) / float64(s.MemStats.MemTotal)
+}
+
+func CheckStatsInWorker(workerIp_port string) bool{
+	cpuThreshold := 0.90
+	memThreshhold := 0.90
+	workerIpPort := strings.Split(workerIp_port, ":")
+	resp,err := ReqWorker("stats","GET",nil,workerIpPort[0],workerIpPort[1])
+	if err!= nil{
+		//handle error
+	}
+	respBody := Stats{}
+	err = json.Unmarshal(resp, &respBody)
+
+	if err!= nil {
+		//handle error
+	}
+
+	availMem := MemAvailablePercent(respBody)
+	cpuUsage := CpuUsage(respBody)
+
+	fmt.Println("------------------Available Mem for persistence since same image container exists: ", availMem)
+	fmt.Println("------------------CpuUsage CPU for persistence since same image container exists: ", cpuUsage)
+
+	if (cpuUsage<cpuThreshold && availMem<memThreshhold){
+		fmt.Println("Existing worker can be used for deploying the new task", workerIp_port)
+		return true;
+	}
+	return false;
 }
 
 func SelectWorker(m *Manager.Manager) models.Worker {
