@@ -78,7 +78,7 @@ func (d *Docker) modifyDockerFile(dockerBuildCtxDir string, image string) {
 	input, err := os.ReadFile(filePathNew + "/baseDockerfile")
 
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Printlnln(err)
 	}
 
 	lines := strings.Split(string(input), "\n")
@@ -123,7 +123,7 @@ func (d *Docker) BuildImage(dockerBuildCtxDir, tagName string) error {
 	defer resp.Body.Close()
 	_, err = io.Copy(os.Stdout, resp.Body)
 	if err != nil {
-		log.Fatal(err, " :unable to read image build response")
+		fmt.Println(err, " :unable to read image build response")
 	}
 	fmt.Println("BUILDING SUCCESSFULL:", os.Stdout, resp)
 	if err != nil {

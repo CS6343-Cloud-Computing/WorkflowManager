@@ -256,7 +256,8 @@ func main() {
 		if env := os.Getenv("WORKER_IP"); env == "" {
 			conn, err := net.Dial("udp", "8.8.8.8:80")
 			if err != nil {
-				log.Fatal(err)
+				// fmt.Println(err)
+				fmt.Println("Line 260 main.go UDP dial error")
 			}
 			localAddr := conn.LocalAddr().(*net.UDPAddr)
 			workerIP = localAddr.IP.String()
@@ -269,7 +270,8 @@ func main() {
 
 	if workerPort == "" {
 		if env := os.Getenv("WORKER_PORT"); env == "" {
-			log.Fatal("No server to connect to... :/")
+			fmt.Println("No server to connect to... :/")
+
 		} else {
 			workerPort = env
 		}
@@ -277,7 +279,7 @@ func main() {
 
 	if serverIP == "" {
 		if env := os.Getenv("SERVER_IP"); env == "" {
-			log.Fatal("No server to connect to... :/")
+			fmt.Println("No server to connect to... :/")
 		} else {
 			serverIP = env
 		}
@@ -285,7 +287,7 @@ func main() {
 
 	if serverPort == "" {
 		if env := os.Getenv("SERVER_PORT"); env == "" {
-			log.Fatal("No server to connect to... :/")
+			fmt.Println("No server to connect to... :/")
 		} else {
 			serverPort = env
 		}
@@ -293,7 +295,7 @@ func main() {
 
 	if joinKey == "" {
 		if env := os.Getenv("JOIN_KEY"); env == "" {
-			log.Fatal("Please provide join key for this cluster")
+			fmt.Println("Please provide join key for this cluster")
 		} else {
 			joinKey = env
 		}
