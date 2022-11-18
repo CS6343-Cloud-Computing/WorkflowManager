@@ -1,0 +1,8 @@
+main:
+  steps:
+    - name: "component_1"
+      image: "cs6343g7/wf3"
+      cmd:
+        - "python3 ./getDictionaryDefinition.py"
+  username: "client3"
+  expiry: 240

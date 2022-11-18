@@ -1,0 +1,24 @@
+main:
+  steps:
+    - name: "component_1"
+      image: "cs6343g7/wf2c1"
+      cmd:
+        - "python3 ./getCountry.py"
+    - name: "component_2"
+      image: "cs6343g7/wf2c2"
+      cmd:
+        - "python3 ./getTemperature.py"
+    - name: "component_3"
+      image: "cs6343g7/wf2c3"
+      cmd:
+        - "python3 ./minMaxTemp.py"
+    - name: "component_4"
+      image: "cs6343g7/wf2c4"
+      cmd:
+        - "python3 ./getPresHum.py"
+    - name: "component_5"
+      image: "cs6343g7/wf2c5"
+      cmd:
+        - "python3 ./getSunStats.py"
+  username: "client2"
+  expiry: 240
