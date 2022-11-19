@@ -78,7 +78,7 @@ func (d *Docker) modifyDockerFile(dockerBuildCtxDir string, image string) {
 	input, err := os.ReadFile(filePathNew + "/baseDockerfile")
 
 	if err != nil {
-		fmt.Printlnln(err)
+		fmt.Println(err)
 	}
 
 	lines := strings.Split(string(input), "\n")
