@@ -1,0 +1,20 @@
+main:
+  steps:
+    - name: "component_1"
+      image: "cs6343g7/cleanarticle:finalterm"
+      cmd:
+        - "python3 ./cleanArticle.py"
+    - name: "component_2"
+      image: "cs6343g7/calculatesimilaritymatrix:finalterm"
+      cmd:
+        - "python3 ./calculateSimilarityMatrix.py"
+    - name: "component_3"
+      image: "cs6343g7/summarizer:finalterm"
+      cmd:
+        - "python3 ./summarizer.py"
+    - name: "component_4.1"
+      image: "cs6343g7/sentimentanalyzer:finalterm"
+      cmd:
+        - "python3 ./sentimentAnalyser.py"
+  username: "client1"
+  expiry: 240
