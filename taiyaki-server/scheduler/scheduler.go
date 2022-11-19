@@ -45,7 +45,7 @@ func MemAvailablePercent(s Stats) float64 {
 
 func CheckStatsInWorker(workerIp_port string) bool {
 	cpuThreshold := 0.90
-	memThreshhold := 0.90
+	memThreshhold := 0.50
 	workerIpPort := strings.Split(workerIp_port, ":")
 	resp, err := ReqWorker("stats", "GET", nil, workerIpPort[0], workerIpPort[1])
 	if err != nil {
@@ -64,7 +64,7 @@ func CheckStatsInWorker(workerIp_port string) bool {
 	fmt.Println("------------------Available Mem for persistence since same image container exists: ", availMem)
 	fmt.Println("------------------CpuUsage CPU for persistence since same image container exists: ", cpuUsage)
 
-	if cpuUsage < cpuThreshold && availMem < memThreshhold {
+	if cpuUsage < cpuThreshold && availMem > memThreshhold {
 		fmt.Println("Existing worker can be used for deploying the new task", workerIp_port)
 		return true
 	}
@@ -76,9 +76,10 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	//workrCntrl := Controller.NewWorker(db)
 	//workers := workrCntrl.GetWorkers()
 	workers := WorkerWithMinTasks(m)
+	log.Println("WorkerWithMinTasks ",workers)
 	selectedWorker := models.Worker{}
 	cpuThreshold := 0.90
-	memThreshhold := 0.90
+	memThreshhold := 0.50
 	workerFound := false
 	for _, worker := range workers {
 		resp, err := ReqWorker("stats", "GET", nil, worker.WorkerIP, worker.WorkerPort)
@@ -92,13 +93,16 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 			//handle error
 		}
 
+
 		availMem := MemAvailablePercent(respBody)
 		cpuUsage := CpuUsage(respBody)
+
+		log.Println("Stats for " + worker.WorkerIP)
 
 		fmt.Println("------------------Available Mem : ", availMem)
 		fmt.Println("------------------CpuUsage CPU : ", cpuUsage)
 
-		if cpuUsage < cpuThreshold && availMem < memThreshhold {
+		if cpuUsage < cpuThreshold && availMem > memThreshhold {
 			fmt.Println("Got a useful worker", worker)
 			selectedWorker = worker
 			workerFound = true
