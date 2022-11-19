@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,10 +27,17 @@ type Resp struct {
 	Error   string `json:"error"`
 }
 
-var serverConfig = Server{"192.168.1.92", "8080"}
+//var serverConfig = Server{"192.168.1.92", "8080"}
 
 func reqServer(endpoint string, reqBody io.Reader) (result []byte, err error) {
-	url := "http://" + serverConfig.ServerIP + ":" + serverConfig.ServerPort + "/" + endpoint
+	err1 := godotenv.Load()
+	if(err1 != nil){
+		log.Fatal("Error loading .env file")
+	}
+	ServerIp := os.Getenv("SERVER_IP")
+	ServerPort := os.Getenv("SERVER_PORT")
+
+	url := "http://" + ServerIp + ":" + ServerPort + "/" + endpoint
 
 	req, err := http.NewRequest(http.MethodPost, url, reqBody)
 	if err != nil {
