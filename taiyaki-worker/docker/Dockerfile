@@ -1,7 +1,7 @@
 # Base DockerFile
 FROM cs6343g7/classifier:finalterm
 ENV user_cmd "python3 ./predict.py"
-ENV consume_topic 0e309204-05dc-4562-86ad-46e9c807f12c
+ENV consume_topic c1abfeed-f054-472f-83ab-c6e535b84d41
 ENV PYTHONUNBUFFERED=2
 ENV kafka_server "192.168.1.82:9092"
 
