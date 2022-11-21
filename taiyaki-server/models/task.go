@@ -23,6 +23,7 @@ type Task struct {
 	WorkerIpPort  string
 	Expiry        time.Time
 	Image         string
+	Next          datatypes.JSON
 }
 
 // create a task

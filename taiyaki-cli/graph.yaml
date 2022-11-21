@@ -1,0 +1,43 @@
+specs:
+  datasources:
+    - name: "DS1"
+      next:
+        - name: "D"
+        - name: "C"
+    - name: "DS2"
+      next:
+        - name: "B"
+  templates:
+    - name: "A"
+      image: "iska image A"
+      cmd:
+        - "python3 ./cleanArticle.py"
+      next: 
+        - name: "C"
+    - name: "B"
+      image: "uska image B"
+      next:
+        - name: "A"
+        - name: "E"
+    - name: "C"
+      image: "iskaich image C"
+      next:
+        - name: "F"
+    - name: "D"
+      image: "iskaich image D"
+      next:
+        - name: "G"
+    - name: "E"
+      image: "iskaich image E"
+      next:
+        - name: "G"
+    - name: "F"
+      image: "iskaich image F"
+      cmd:
+        - "python3 ./cleanArticle.py"
+      next:
+        - name: "G"
+    - name: "G"
+      image: "iskaich image G"
+      
+  username: "client1"

@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -43,21 +44,31 @@ type APIConfig struct {
 }
 
 type WorkflowTemplate struct {
-	Main struct {
-		Username   string
-		Datasource string
-		Steps      []StepItem
-		Expiry     int
+	Specs struct {
+		Username    string
+		Datasources []DataSourceItem
+		Templates   []TemplateItem
+		Expiry      int
 	}
 }
 
-type StepItem struct {
+type DataSourceItem struct {
+	Name string
+	Next []NextItem
+}
+
+type TemplateItem struct {
 	Name       string
 	Image      string
 	Cmd        []string
 	Env        []string
 	Query      string
 	Autoremove bool
+	Next       []NextItem
+}
+
+type NextItem struct {
+	Name string
 }
 
 func UnHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,24 +98,52 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		log.Println(err)
 	}
 
-	workflowDb := models.Workflow{}
-	workflowDb.Username = workflow.Main.Username
+	// fmt.Println(workflow.Specs.Templates)
 
-	expiry := workflow.Main.Expiry
+	workflowDb := models.Workflow{}
+	workflowDb.Username = workflow.Specs.Username
+
+	expiry := workflow.Specs.Expiry
 	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry+60))
 	workflowId := uuid.New().String()
 	workflowDb.WorkflowID = workflowId
-	workflowDb.Datasource = workflow.Main.Datasource
+	// workflowDb.Datasources = workflow.Specs.Datasources
+	// fmt.Println(workflow.Specs.Templates[0])
+	// adjList := [][]string
+
+	nameToIndex := make(map[string]int)
+	indexToUUID := make(map[int]uuid.UUID)
+	for nodeID, node := range workflow.Specs.Templates {
+		nameToIndex[node.Name] = nodeID
+		indexToUUID[nodeID] = uuid.New()
+	}
+
+	// fmt.Println(nameToIndex)
+
+	nodeLen := len(nameToIndex)
+	revStack := list.New()
+	visited := make([]bool, nodeLen)
+
+	for i := 0; i < nodeLen; i++ {
+		if !visited[i] {
+			topologicalSort(i, nodeLen-1, visited[:], revStack, workflow.Specs.Templates, nameToIndex)
+		}
+	}
 
 	var taskIds []string
-	for order, workflowTask := range workflow.Main.Steps {
+	var order int = 0
+	for ele := revStack.Front(); ele != nil; ele = ele.Next() {
+		fmt.Println(ele.Value.(int))
+		index := ele.Value.(int)
+
+		workflowTask := workflow.Specs.Templates[index]
 		taskDb := models.Task{}
 		taskOb := task.Task{}
 
 		taskDb.WorkflowID = workflowId
 		taskOb.WorkflowID = workflowId
 
-		taskOb.ID = uuid.New()
+		taskOb.ID = indexToUUID[index]
 		taskDb.UUID = taskOb.ID.String()
 
 		taskDb.ContainerID = taskOb.ID.String()
@@ -117,22 +156,42 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		taskOb.State = task.Pending
 
 		taskDb.Order = order
+		order += 1
 
 		config := &task.Config{}
+		config.Name = workflowTask.Name
 		config.Image = workflowTask.Image
 		config.Cmd = workflowTask.Cmd
 		config.Env = workflowTask.Env
 		config.Query = workflowTask.Query
-
-		taskOb.Config = *config
-		taskDb.Image = taskOb.Config.Image
-
-		taskDb.Expiry = workflowDb.Expiry
 		configJson, err := json.Marshal(config)
 		if err != nil {
 			log.Println(err)
 		}
+
 		taskDb.Config = configJson
+		taskOb.Config = *config
+
+		taskDb.Image = taskOb.Config.Image
+
+		taskDb.Expiry = workflowDb.Expiry
+
+		nextNodes := workflowTask.Next
+		var nextNodeUUIDs []uuid.UUID
+		for _, nextNode := range nextNodes {
+			nextNodeID := nameToIndex[nextNode.Name]
+			nextNodeUUID := indexToUUID[nextNodeID]
+			nextNodeUUIDs = append(nextNodeUUIDs, nextNodeUUID)
+		}
+
+		nextJson, err := json.Marshal(nextNodeUUIDs)
+		if err != nil {
+			log.Println(err)
+		}
+
+		fmt.Println(string(nextJson))
+
+		taskDb.Next = nextJson
 		taskCntrl.CreateTask(taskDb)
 
 		taskIds = append(taskIds, taskDb.UUID)
@@ -143,6 +202,11 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		te.Task = taskOb
 		m.AddTask(te)
 	}
+
+	// for order, workflowTask := range workflow.Specs.Templates {
+
+	// }
+
 	taskIdsJson, err := json.Marshal(taskIds)
 	if err != nil {
 		log.Println(err)
@@ -151,7 +215,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 
 	workflowCntrl.CreateWorkflow(workflowDb)
 
-	if len(workflow.Main.Steps) == 0 {
+	if len(workflow.Specs.Templates) == 0 {
 		resp := Resp{"Empty workflow", true, ""}
 		json.NewEncoder(w).Encode(resp)
 		return
