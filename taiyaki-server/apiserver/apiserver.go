@@ -54,7 +54,6 @@ type WorkflowTemplate struct {
 
 type DataSourceItem struct {
 	Name string
-	Next []NextItem
 }
 
 type TemplateItem struct {
@@ -64,10 +63,11 @@ type TemplateItem struct {
 	Env        []string
 	Query      string
 	Autoremove bool
-	Next       []NextItem
+	Input      []IOItem
+	Output     []IOItem
 }
 
-type NextItem struct {
+type IOItem struct {
 	Name string
 }
 
@@ -98,8 +98,6 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		log.Println(err)
 	}
 
-	// fmt.Println(workflow.Specs.Templates)
-
 	workflowDb := models.Workflow{}
 	workflowDb.Username = workflow.Specs.Username
 
@@ -107,9 +105,11 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	workflowDb.Expiry = time.Now().Add(time.Second * time.Duration(expiry+60))
 	workflowId := uuid.New().String()
 	workflowDb.WorkflowID = workflowId
-	// workflowDb.Datasources = workflow.Specs.Datasources
-	// fmt.Println(workflow.Specs.Templates[0])
-	// adjList := [][]string
+
+	datasources := make(map[string]bool)
+	for _, dataSource := range workflow.Specs.Datasources {
+		datasources[dataSource.Name] = true
+	}
 
 	nameToIndex := make(map[string]int)
 	indexToUUID := make(map[int]uuid.UUID)
@@ -117,8 +117,6 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		nameToIndex[node.Name] = nodeID
 		indexToUUID[nodeID] = uuid.New()
 	}
-
-	// fmt.Println(nameToIndex)
 
 	nodeLen := len(nameToIndex)
 	revStack := list.New()
@@ -155,7 +153,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		taskDb.State = "Pending"
 		taskOb.State = task.Pending
 
-		taskDb.Order = order
+		taskDb.DeploymentOrder = order
 		order += 1
 
 		config := &task.Config{}
@@ -176,22 +174,40 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 
 		taskDb.Expiry = workflowDb.Expiry
 
-		nextNodes := workflowTask.Next
-		var nextNodeUUIDs []uuid.UUID
-		for _, nextNode := range nextNodes {
-			nextNodeID := nameToIndex[nextNode.Name]
-			nextNodeUUID := indexToUUID[nextNodeID]
-			nextNodeUUIDs = append(nextNodeUUIDs, nextNodeUUID)
+		outputNodes := workflowTask.Output
+		var outputNodeUUIDs []string
+		for _, outputNode := range outputNodes {
+			outputNodeID := nameToIndex[outputNode.Name]
+			outputNodeUUID := indexToUUID[outputNodeID]
+			outputNodeUUIDs = append(outputNodeUUIDs, outputNodeUUID.String())
 		}
 
-		nextJson, err := json.Marshal(nextNodeUUIDs)
+		outputJson, err := json.Marshal(outputNodeUUIDs)
 		if err != nil {
 			log.Println(err)
 		}
 
-		fmt.Println(string(nextJson))
+		taskDb.Output = outputJson
 
-		taskDb.Next = nextJson
+		inputNodes := workflowTask.Input
+		var inputNodeUUIDs []string
+		for _, inputNode := range inputNodes {
+			if !datasources[inputNode.Name] {
+				inputNodeID := nameToIndex[inputNode.Name]
+				inputNodeUUID := indexToUUID[inputNodeID]
+				inputNodeUUIDs = append(inputNodeUUIDs, inputNodeUUID.String())
+			} else {
+				inputNodeUUIDs = append(inputNodeUUIDs, inputNode.Name)
+			}
+		}
+
+		inputJson, err := json.Marshal(inputNodeUUIDs)
+		if err != nil {
+			log.Println(err)
+		}
+
+		taskDb.Input = inputJson
+
 		taskCntrl.CreateTask(taskDb)
 
 		taskIds = append(taskIds, taskDb.UUID)
@@ -202,10 +218,6 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		te.Task = taskOb
 		m.AddTask(te)
 	}
-
-	// for order, workflowTask := range workflow.Specs.Templates {
-
-	// }
 
 	taskIdsJson, err := json.Marshal(taskIds)
 	if err != nil {

@@ -1,43 +1,54 @@
 specs:
   datasources:
     - name: "DS1"
-      next:
-        - name: "D"
-        - name: "C"
     - name: "DS2"
-      next:
-        - name: "B"
   templates:
     - name: "A"
       image: "iska image A"
       cmd:
         - "python3 ./cleanArticle.py"
-      next: 
+      input:
+        - name: "B"
+      output:
         - name: "C"
     - name: "B"
       image: "uska image B"
-      next:
+      input:
+        - name: "DS1"
+      output:
         - name: "A"
         - name: "E"
     - name: "C"
       image: "iskaich image C"
-      next:
+      input:
+        - name: "A"
+      output:
         - name: "F"
     - name: "D"
       image: "iskaich image D"
-      next:
+      input:
+        - name: "DS2"
+      output:
         - name: "G"
     - name: "E"
       image: "iskaich image E"
-      next:
+      input:
+        - name: "B"
+      output:
         - name: "G"
     - name: "F"
       image: "iskaich image F"
       cmd:
         - "python3 ./cleanArticle.py"
-      next:
+      input:
+        - name: "C"
+      output:
         - name: "G"
     - name: "G"
       image: "iskaich image G"
+      input:
+        - name: "F"
+        - name: "E"
+        - name: "D"
       
   username: "client1"
