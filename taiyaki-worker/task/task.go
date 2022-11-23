@@ -152,7 +152,11 @@ func (d *Docker) Run() DockerResult {
 		if image.RepoTags == nil {
 			continue
 		}
-		imageName := strings.Split(image.RepoTags[0], " ")
+		fmt.Println(image.RepoTags)
+		imageName := strings.Split(image.RepoTags[0], ":")
+		if imageName == nil {
+			imageName = strings.Split(image.RepoTags[0], " ")
+		}
 		if imageName[0] == "mod_"+d.Task.Config.Image {
 			fmt.Println("==============image name is same=============================================================")
 			isImagePresent = true

@@ -1,0 +1,29 @@
+specs:
+  datasources:
+    - name: "DS1"
+  templates:
+    - name: "component_1"
+      image: "cs6343g7/wf2c1"
+      cmd:
+        - "python3 ./getCountry.py"
+      input:
+        - name: "DS1"
+      output:
+        - name: "component_2"
+    - name: "component_2"
+      image: "cs6343g7/wf2c2"
+      cmd:
+        - "python3 ./getTemperature.py"
+      input:
+        - name: "component_1"
+      output:
+        - name: "component_3"
+    - name: "component_3"
+      image: "cs6343g7/wf2c3"
+      cmd:
+        - "python3 ./minMaxTemp.py"
+      input:
+        - name: "component_1"
+        - name: "component_2"
+      
+  username: "client1"

@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
@@ -76,10 +76,10 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	//workrCntrl := Controller.NewWorker(db)
 	//workers := workrCntrl.GetWorkers()
 	workers := WorkerWithMinTasks(m)
-	log.Println("WorkerWithMinTasks ",workers)
+	log.Println("WorkerWithMinTasks ", workers)
 	selectedWorker := models.Worker{}
 	cpuThreshold := 0.90
-	memThreshhold := 0.50
+	memThreshhold := 0.10
 	workerFound := false
 	for _, worker := range workers {
 		resp, err := ReqWorker("stats", "GET", nil, worker.WorkerIP, worker.WorkerPort)
@@ -92,7 +92,6 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 		if err != nil {
 			//handle error
 		}
-
 
 		availMem := MemAvailablePercent(respBody)
 		cpuUsage := CpuUsage(respBody)

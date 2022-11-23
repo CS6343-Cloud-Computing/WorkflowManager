@@ -12,11 +12,19 @@ class MultiQueue:
         self.queues = [queue.Queue()]*self.indegree
     
     def IsReady(self):
-        # iterate over all queues and check the top element
-        # if present then only return true otherwise false
+        for queue in self.queues:
+            if queue.empty():
+                return False
+        return True
 
     def GetList(self):
-        # returns the first element of the each queue as a list
+        result = []
+        for queue in self.queues:
+            result.append(queue.get())
+        return result
+
+    def PutElement(self, item, k):
+        self.queues[k].put(item)
 
 
 
@@ -51,33 +59,33 @@ class streamExecutor:
     def Exec(self):
         print("Started stream executor")
         for msg in self.consumer:
-            # Get the workflow ID of the message
-            # Get the sender ID of the message
-            # Insert the message inside the queue for that particular senderID queue in the workflow
-            # Check the top of the queue for every queue in the workflow for which we just received the message
-            # if the top of the queue is empty for some then wait
-            # Otherwise call the user function and produce a next message
-
-            data = msg.value.decode("utf-8")
-            print(data)
-            cmds = self.userCMD.split()
-            cmds.append(data)
-            userProcess = subprocess.Popen(cmds, stdout=subprocess.PIPE, text=True, universal_newlines=True)
-                                           
-            output = str(userProcess.communicate()[0])
-            print(msg)
-            print(output, end='')
-            flow = msg.headers[0][1].decode("utf-8")
-            flow = flow.split("<===>")
-            pointer = int(msg.headers[1][1])
             workflow = msg.headers[2][1].decode("utf-8")
-            if pointer >= len(flow):
-                self.producer.send(workflow+"-output",  key = msg.key,  value = output.encode('utf-8'),partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode('utf-8')),('workflow', workflow.encode('utf-8'))])
-                continue
+            sourceID = msg.headers[3][1].decode("utf-8")
+            if self.messageQueue[workflow] is None:
+                self.messageQueue[workflow] = MultiQueue()
+            self.messageQueue[workflow].PutElement(msg, sourceID)
+            if self.messageQueue[workflow].IsReady():
+                res = self.messageQueue[workflow].GetList()
+                data = msg.value.decode("utf-8")
+                print(data)
+                cmds = self.userCMD.split()
+                cmds.append(data)
+                userProcess = subprocess.Popen(cmds, stdout=subprocess.PIPE, text=True, universal_newlines=True)
+                                        
+                output = str(userProcess.communicate()[0])
+                print(msg)
+                print(output, end='')
+                flow = msg.headers[0][1].decode("utf-8")
+                flow = flow.split("<===>")
+                pointer = int(msg.headers[1][1])
 
-            self.producer.send(flow[pointer],  key = msg.key,  value = output.encode('utf-8'),partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode('utf-8')),('workflow', workflow.encode('utf-8'))])
+                if pointer >= len(flow):
+                    self.producer.send(workflow+"-output",  key = msg.key,  value = output.encode('utf-8'),partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode('utf-8')),('workflow', workflow.encode('utf-8'))])
+                    continue
 
-            
+                self.producer.send(flow[pointer],  key = msg.key,  value = output.encode('utf-8'),partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode('utf-8')),('workflow', workflow.encode('utf-8'))])
+                # Otherwise call the user function and produce a next message
+
 if __name__ == "__main__":
     se = streamExecutor()
     se.Exec()

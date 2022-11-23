@@ -53,7 +53,7 @@ func main() {
 
 	go taskStatus.UpdateTasks(m)
 
-	go Manager.KillTask(m)
+	// go Manager.KillTask(m)
 	wg.Wait()
 
 	//create a new manager
