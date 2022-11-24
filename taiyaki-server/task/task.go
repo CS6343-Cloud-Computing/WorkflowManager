@@ -39,6 +39,7 @@ type Task struct {
 	StartTime     time.Time
 	FinishTime    time.Time
 	Config        Config
+	Indegree      int
 }
 
 type TaskEvent struct {

@@ -208,6 +208,9 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 
 		taskDb.Input = inputJson
 
+		taskDb.Indegree = len(inputNodeUUIDs)
+		taskOb.Indegree = len(inputNodeUUIDs)
+
 		taskCntrl.CreateTask(taskDb)
 
 		taskIds = append(taskIds, taskDb.UUID)

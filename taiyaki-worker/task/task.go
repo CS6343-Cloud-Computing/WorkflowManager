@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,6 +52,7 @@ type Task struct {
 	StartTime     time.Time
 	FinishTime    time.Time
 	Config        Config
+	Indegree      int
 }
 
 type TaskEvent struct {
@@ -91,6 +93,9 @@ func (d *Docker) modifyDockerFile(dockerBuildCtxDir string, image string) {
 
 	lines[3] = strings.Replace(lines[3], "$3", d.Task.ContainerId, 1)
 	fmt.Println(lines[3])
+
+	lines[4] = strings.Replace(lines[4], "$4", strconv.Itoa(d.Task.Indegree), 1)
+	fmt.Println(lines[4])
 
 	output := strings.Join(lines, "\n")
 

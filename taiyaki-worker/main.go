@@ -301,7 +301,10 @@ func main() {
 		}
 	}
 
-	NodeJoin(workerIP, workerPort, serverIP, serverPort, joinKey)
+	for !NodeJoin(workerIP, workerPort, serverIP, serverPort, joinKey) {
+		fmt.Println("Server is not running probably")
+		time.Sleep(2 * time.Second)
+	}
 
 	worker := Worker{Queue: *queue.New(), Db: make(map[uuid.UUID]task.Task)}
 	go runTasks(&worker)

@@ -16,13 +16,13 @@ func NodeJoin(workerIP string, workerPort string, serverIP string, serverPort st
 
 	resp, err := reqServer(endpoint, reqBody)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	fmt.Println(resp)
 	respBody := Resp{}
 	err = json.Unmarshal(resp, &respBody)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	if respBody.Success {

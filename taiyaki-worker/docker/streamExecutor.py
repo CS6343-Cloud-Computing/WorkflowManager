@@ -8,8 +8,8 @@ import queue
 
 class MultiQueue:
     def __init__(self):
-        self.indegree = os.getenv('indegree')
-        self.queues = [queue.Queue()]*self.indegree
+        self.indegree = int(os.getenv('indegree'))
+        self.queues = [queue.Queue() for i in range(self.indegree)]
     
     def IsReady(self):
         for queue in self.queues:
@@ -37,7 +37,7 @@ class streamExecutor:
         self.kafka_init()
     
     def streamExecutor_init(self):
-        self.messageQueue = defaultdict()
+        self.messageQueue = defaultdict(lambda: None)
 
     def kafka_init(self):
 
@@ -59,31 +59,41 @@ class streamExecutor:
     def Exec(self):
         print("Started stream executor")
         for msg in self.consumer:
+            print("Rec msg: ", msg)
+            input = eval(msg.headers[0][1].decode("utf-8"))
+            output = eval(msg.headers[1][1].decode("utf-8"))
             workflow = msg.headers[2][1].decode("utf-8")
-            sourceID = msg.headers[3][1].decode("utf-8")
+            containerName = os.getenv("consume_topic")
             if self.messageQueue[workflow] is None:
                 self.messageQueue[workflow] = MultiQueue()
-            self.messageQueue[workflow].PutElement(msg, sourceID)
+            prev = msg.key.decode("utf-8").split("::")[1]
+            prevIndex = input[containerName].index(prev)
+            print("inserting in the queue: ", prev, prevIndex)
+            self.messageQueue[workflow].PutElement(msg, prevIndex)
             if self.messageQueue[workflow].IsReady():
+                print("inputs are ready: ", workflow)
                 res = self.messageQueue[workflow].GetList()
-                data = msg.value.decode("utf-8")
+                data = str([ele.value.decode("utf-8") for ele in res])
                 print(data)
                 cmds = self.userCMD.split()
                 cmds.append(data)
                 userProcess = subprocess.Popen(cmds, stdout=subprocess.PIPE, text=True, universal_newlines=True)
                                         
-                output = str(userProcess.communicate()[0])
-                print(msg)
-                print(output, end='')
-                flow = msg.headers[0][1].decode("utf-8")
-                flow = flow.split("<===>")
-                pointer = int(msg.headers[1][1])
+                processOutput = str(userProcess.communicate()[0])
+                print(processOutput, end='')
 
-                if pointer >= len(flow):
-                    self.producer.send(workflow+"-output",  key = msg.key,  value = output.encode('utf-8'),partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode('utf-8')),('workflow', workflow.encode('utf-8'))])
-                    continue
+                nextContainers = output[containerName]
+                
+                
+                msgID = msg.key.decode("utf-8").split("::")[2]
+                key = workflow+"::"+containerName+"::"+str(msgID)
+                for container in nextContainers:
+                    print("sending to: ", container)
+                    if container == "null":
+                        self.producer.send(workflow+"-output",  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", msg.headers[0][1]), ("Output", msg.headers[1][1]),('workflow', workflow.encode('utf-8'))])
+                        continue
 
-                self.producer.send(flow[pointer],  key = msg.key,  value = output.encode('utf-8'),partition=0, headers=[('flow', "<===>".join(flow).encode('utf-8')), ('pointer', str(pointer+1).encode('utf-8')),('workflow', workflow.encode('utf-8'))])
+                    self.producer.send(container,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", msg.headers[0][1]), ("Output", msg.headers[1][1]),('workflow', workflow.encode('utf-8'))])
                 # Otherwise call the user function and produce a next message
 
 if __name__ == "__main__":

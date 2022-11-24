@@ -25,6 +25,7 @@ type Task struct {
 	Image           string
 	Output          datatypes.JSON
 	Input           datatypes.JSON
+	Indegree        int
 }
 
 // create a task

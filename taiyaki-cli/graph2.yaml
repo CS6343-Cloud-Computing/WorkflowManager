@@ -1,15 +1,16 @@
 specs:
   datasources:
-    - name: "DS1"
+    - name: "CDS"
   templates:
     - name: "component_1"
       image: "cs6343g7/wf2c1"
       cmd:
         - "python3 ./getCountry.py"
       input:
-        - name: "DS1"
+        - name: "CDS"
       output:
         - name: "component_2"
+        - name: "component_3"
     - name: "component_2"
       image: "cs6343g7/wf2c2"
       cmd:

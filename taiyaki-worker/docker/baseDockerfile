@@ -2,6 +2,7 @@
 FROM $1
 ENV user_cmd $2
 ENV consume_topic $3
+ENV indegree $4
 ENV PYTHONUNBUFFERED=2
 ENV kafka_server "192.168.1.82:9092"
 
