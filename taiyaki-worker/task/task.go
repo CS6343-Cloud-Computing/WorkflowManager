@@ -53,6 +53,7 @@ type Task struct {
 	FinishTime    time.Time
 	Config        Config
 	Indegree      int
+	Persistence   bool
 }
 
 type TaskEvent struct {
@@ -91,7 +92,7 @@ func (d *Docker) modifyDockerFile(dockerBuildCtxDir string, image string) {
 	lines[2] = strings.Replace(lines[2], "$2", "\""+d.Task.Config.Cmd[0]+"\"", 1)
 	fmt.Println(lines[2])
 
-	lines[3] = strings.Replace(lines[3], "$3", d.Task.ContainerId, 1)
+	// lines[3] = strings.Replace(lines[3], "$3", d.Task.ContainerId, 1)
 	fmt.Println(lines[3])
 
 	lines[4] = strings.Replace(lines[4], "$4", strconv.Itoa(d.Task.Indegree), 1)
@@ -180,6 +181,8 @@ func (d *Docker) Run() DockerResult {
 	rp := container.RestartPolicy{
 		Name: d.Task.Config.RestartPolicy,
 	}
+
+	d.Task.Config.Env = []string{"consume_topic=" + d.Task.ContainerId}
 
 	cc := container.Config{
 		Image: d.Task.Config.Image,

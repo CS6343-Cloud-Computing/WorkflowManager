@@ -79,7 +79,7 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	log.Println("WorkerWithMinTasks ", workers)
 	selectedWorker := models.Worker{}
 	cpuThreshold := 0.90
-	memThreshhold := 0.10
+	memThreshhold := 0.0
 	workerFound := false
 	for _, worker := range workers {
 		resp, err := ReqWorker("stats", "GET", nil, worker.WorkerIP, worker.WorkerPort)
