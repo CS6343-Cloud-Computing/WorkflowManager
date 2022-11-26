@@ -124,6 +124,8 @@ func (d *Docker) BuildImage(dockerBuildCtxDir, tagName string) error {
 		types.ImageBuildOptions{
 			Dockerfile: "Dockerfile",
 			Tags:       []string{tagName},
+			NoCache:    false,
+			Remove:     false,
 		}) //cli is the docker client instance created from the engine-api
 	defer resp.Body.Close()
 	_, err = io.Copy(os.Stdout, resp.Body)
