@@ -46,13 +46,14 @@ type APIConfig struct {
 type WorkflowTemplate struct {
 	Specs struct {
 		Username    string
-		Datasources []DataSourceItem
+		Datasources []DataSourceSinkItem
+		Outputsinks []DataSourceSinkItem
 		Templates   []TemplateItem
 		Expiry      int
 	}
 }
 
-type DataSourceItem struct {
+type DataSourceSinkItem struct {
 	Name string
 }
 
@@ -112,6 +113,11 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		datasources[dataSource.Name] = true
 	}
 
+	outputsinks := make(map[string]bool)
+	for _, outputSink := range workflow.Specs.Outputsinks {
+		outputsinks[outputSink.Name] = true
+	}
+
 	nameToIndex := make(map[string]int)
 	indexToUUID := make(map[int]uuid.UUID)
 	for nodeID, node := range workflow.Specs.Templates {
@@ -125,7 +131,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 
 	for i := 0; i < nodeLen; i++ {
 		if !visited[i] {
-			topologicalSort(i, nodeLen-1, visited[:], revStack, workflow.Specs.Templates, nameToIndex)
+			topologicalSort(i, nodeLen-1, visited[:], revStack, workflow.Specs.Templates, nameToIndex, outputsinks)
 		}
 	}
 
@@ -159,7 +165,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 
 		taskDb.Persistence = workflowTask.Persistence
 		taskOb.Persistence = workflowTask.Persistence
-		
+
 		config := &task.Config{}
 		config.Name = workflowTask.Name
 		config.Image = workflowTask.Image
@@ -181,9 +187,13 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		outputNodes := workflowTask.Output
 		var outputNodeUUIDs []string
 		for _, outputNode := range outputNodes {
-			outputNodeID := nameToIndex[outputNode.Name]
-			outputNodeUUID := indexToUUID[outputNodeID]
-			outputNodeUUIDs = append(outputNodeUUIDs, outputNodeUUID.String())
+			if !outputsinks[outputNode.Name] {
+				outputNodeID := nameToIndex[outputNode.Name]
+				outputNodeUUID := indexToUUID[outputNodeID]
+				outputNodeUUIDs = append(outputNodeUUIDs, outputNodeUUID.String())
+			} else {
+				outputNodeUUIDs = append(outputNodeUUIDs, "__"+outputNode.Name+"__")
+			}
 		}
 
 		outputJson, err := json.Marshal(outputNodeUUIDs)
