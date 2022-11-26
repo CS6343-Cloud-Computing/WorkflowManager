@@ -20,6 +20,7 @@ type Server struct {
 	ServerPort string
 }
 
+
 // Resp - Generic response
 type Resp struct {
 	Result  string `json:"result"`
