@@ -26,6 +26,7 @@ type Task struct {
 	Output          datatypes.JSON
 	Input           datatypes.JSON
 	Indegree        int
+	Persistence     bool
 }
 
 // create a task

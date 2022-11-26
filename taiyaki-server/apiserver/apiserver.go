@@ -57,14 +57,15 @@ type DataSourceItem struct {
 }
 
 type TemplateItem struct {
-	Name       string
-	Image      string
-	Cmd        []string
-	Env        []string
-	Query      string
-	Autoremove bool
-	Input      []IOItem
-	Output     []IOItem
+	Name        string
+	Image       string
+	Cmd         []string
+	Env         []string
+	Query       string
+	Autoremove  bool
+	Input       []IOItem
+	Output      []IOItem
+	Persistence bool
 }
 
 type IOItem struct {
@@ -156,6 +157,9 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		taskDb.DeploymentOrder = order
 		order += 1
 
+		taskDb.Persistence = workflowTask.Persistence
+		taskOb.Persistence = workflowTask.Persistence
+		
 		config := &task.Config{}
 		config.Name = workflowTask.Name
 		config.Image = workflowTask.Image
