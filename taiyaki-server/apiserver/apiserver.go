@@ -76,7 +76,7 @@ type IOItem struct {
 type CntnrCntPrstnce struct {
 	Container  string
 	Count      int
-	Peristance bool
+	Persistance bool
 }
 
 func UnHandler(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +128,7 @@ func handler(w http.ResponseWriter, r *http.Request, m *Manager.Manager) {
 		var cntnrCntPrstnce CntnrCntPrstnce
 		cntnrCntPrstnce.Container = containerIdCount.ContainerId
 		cntnrCntPrstnce.Count = containerIdCount.Count
-		cntnrCntPrstnce.Peristance = imageMapCount[containerIdCount.Image]
+		cntnrCntPrstnce.Persistance = imageMapCount[containerIdCount.Image]
 		cntnrCntPrstnces = append(cntnrCntPrstnces, cntnrCntPrstnce)
 	}
 	//update everything to received kill bit
@@ -478,6 +478,7 @@ func SendWork(m *Manager.Manager) {
 		image := taskUpdate.Image
 		//check if container with same image is Running
 		taskU := taskCntrl.GetTaskWithSameImage(image)
+		log.Println("container with same image found")
 		//check if stats of that worker fits criteria, then no need to send it to worker
 		if taskU.UUID != nilTask.UUID {
 			validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
