@@ -497,12 +497,16 @@ func SendWork(m *Manager.Manager) {
 		}
 
 		//get running container with same image and count > 3
+		log.Println("containers with same image in running state not found ")
 		imageCntrl := Controller.NewEntry(m.DB)
 		imageCount, valid := imageCntrl.GetEntry(image)
 		if valid {
 			if imageCount.Count > 4 {
+				log.Println("image count is greater than 4. Trying to deploy in same container which is persisted ")
 				taskU := taskCntrl.GetLatestTaskWithImage(image)
+				log.Println("Got latest worker with same image deployed ", taskU)
 				validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
+				log.Println("Got latest worker with same image deployed and is valid ",validWorkerForPersistence)
 				if validWorkerForPersistence {
 					log.Println("Persistance is possible in container: ", taskU.ContainerID)
 					taskUpdate.ContainerID = taskU.ContainerID

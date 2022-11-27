@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 
 	//"strconv"
@@ -17,6 +19,7 @@ import (
 	"taiyaki-server/models"
 
 	"github.com/c9s/goprocinfo/linux"
+	"github.com/joho/godotenv"
 )
 
 type Stats struct {
@@ -44,8 +47,22 @@ func MemAvailablePercent(s Stats) float64 {
 }
 
 func CheckStatsInWorker(workerIp_port string) bool {
-	cpuThreshold := 0.90
-	memThreshhold := 0.50
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	
+	cpuThreshold, err := strconv.ParseFloat(os.Getenv("CPU_THRESHOLD"), 64); 
+	if err!= nil {
+		log.Println("Error getting cpuThreshold")
+	}
+
+	log.Println("CPU threshold ",cpuThreshold)
+	memThreshhold, err := strconv.ParseFloat(os.Getenv("MEM_THRESHOLD"), 64);
+	if err!= nil {
+		log.Println("Error getting memThreshhold")
+	} 
+	log.Println("Mem Threshold ",memThreshhold)
 	workerIpPort := strings.Split(workerIp_port, ":")
 	resp, err := ReqWorker("stats", "GET", nil, workerIpPort[0], workerIpPort[1])
 	if err != nil {
@@ -80,8 +97,22 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	workrCntrl := Controller.NewWorker(db)
 	log.Println("WorkerWithMinTasks ", workers)
 	selectedWorker := models.Worker{}
-	cpuThreshold := 0.90
-	memThreshhold := 0.0
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	cpuThreshold, err := strconv.ParseFloat(os.Getenv("CPU_THRESHOLD"), 64); 
+	if err!= nil {
+		log.Println("Error getting cpuThreshold")
+	}
+
+	log.Println("CPU threshold ",cpuThreshold)
+	memThreshhold, err := strconv.ParseFloat(os.Getenv("MEM_THRESHOLD"), 64);
+	if err!= nil {
+		log.Println("Error getting memThreshhold")
+	} 
+	log.Println("Mem Threshold ",memThreshhold)
+
 	workerFound := false
 	for _, worker := range workers {
 		resp, err := ReqWorker("stats", "GET", nil, worker.WorkerIP, worker.WorkerPort)
