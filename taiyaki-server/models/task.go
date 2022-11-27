@@ -1,6 +1,7 @@
 package models
 
 import (
+	"log"
 	"time"
 
 	"gorm.io/datatypes"
@@ -27,6 +28,12 @@ type Task struct {
 	Input           datatypes.JSON
 	Indegree        int
 	Persistence     bool
+}
+
+type ContainerCount struct {
+	ContainerId string
+	Image       string
+	Count       int
 }
 
 // create a task
@@ -94,6 +101,31 @@ func GetTaskWithSameImage(db *gorm.DB, task *Task, imageName string) (err error)
 
 func GetOldestTaskForContainer(db *gorm.DB, task *Task, containerId string) (err error) {
 	err = db.Where("container_id = ?", containerId).Order("created_at").First(task).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetCntnrIdFromWorkflowId(db *gorm.DB, containerIds *[]string, workflowId string) (err error) {
+	err = db.Raw("select container_id from tasks where workflow_id = ?", workflowId).Scan(&containerIds).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetCountImageInContainers(db *gorm.DB, containerIdCount *[]ContainerCount, containerIds []string) (err error) {
+
+	err = db.Raw("select container_id, image, COUNT(container_id) as count from tasks where state = \"Running\" and container_id in ? GROUP by container_id, image", containerIds).Scan(&containerIdCount).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateTasksInWrkFlw(db *gorm.DB, workflowId string) (err error) {
+	err = db.Exec("update tasks set state = \"KillBitReceived\" where workflow_id = ?", workflowId).Error
 	if err != nil {
 		return err
 	}

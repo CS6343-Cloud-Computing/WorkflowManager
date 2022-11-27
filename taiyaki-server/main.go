@@ -30,10 +30,14 @@ func main() {
 	db.Exec("DROP TABLE if exists workers")
 	db.Exec("DROP TABLE if exists tasks")
 	db.Exec("DROP TABLE if exists workflows")
+	db.Exec("DROP TABLE if exists image_counts")
+
 
 	db.AutoMigrate(&models.Worker{})
 	db.AutoMigrate(&models.Task{})
 	db.AutoMigrate(&models.Workflow{})
+	db.AutoMigrate(&models.ImageCount{})
+
 	m := Manager.NewManager()
 	m.DB = db
 	wg := sync.WaitGroup{}
