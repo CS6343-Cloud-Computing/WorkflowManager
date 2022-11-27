@@ -1,0 +1,52 @@
+specs:
+  datasources:
+    - name: "TDS"
+  outputsinks:
+    - name: "out1"
+    - name: "out2"
+    - name: "out3"
+  templates:
+    - name: "cleanArticle"
+      image: "cs6343g7/cleanarticle:finalterm"
+      cmd:
+        - "python3 ./cleanArticle.py"
+      input:
+        - name: "TDS"
+      output:
+        - name: "similarityMatrix"
+    - name: "similarityMatrix"
+      image: "cs6343g7/calculatesimilaritymatrix:finalterm"
+      cmd:
+        - "python3 ./calculateSimilarityMatrix.py"
+      input:
+        - name: "cleanArticle"
+      output:
+        - name: "summarizer"
+    - name: "summarizer"
+      image: "cs6343g7/summarizer:finalterm"
+      cmd:
+        - "python3 ./summarizer.py"
+      input:
+        - name: "similarityMatrix"
+      output:
+        - name: "out1"
+        - name: "sentimentAnalysis"
+        - name: "classifier"
+    - name: "sentimentAnalysis"
+      image: "cs6343g7/sentimentanalyzer:finalterm"
+      cmd:
+          - "python3 ./sentimentAnalyser.py"
+      input:
+        - name: "summarizer"
+      output:
+        - name: "out2"
+    - name: "classifier"
+      image: "cs6343g7/classifier:finalterm"
+      cmd:
+        - "python3 ./predict.py"
+      input:
+        - name: "summarizer"
+      output:
+        - name: "out3"
+      
+  username: "client1"
