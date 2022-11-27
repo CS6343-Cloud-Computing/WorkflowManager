@@ -1,8 +1,8 @@
 # Base DockerFile
-FROM cs6343g7/wf2c3
-ENV user_cmd "python3 ./minMaxTemp.py"
-ENV consume_topic c17b358b-b091-4f0e-87e1-01e3d7932969
-ENV indegree 2
+FROM cs6343g7/cleanarticle:finalterm
+ENV user_cmd "python3 ./cleanArticle.py"
+# ENV consume_topic $3
+ENV indegree 1
 ENV PYTHONUNBUFFERED=2
 ENV kafka_server "192.168.1.82:9092"
 
