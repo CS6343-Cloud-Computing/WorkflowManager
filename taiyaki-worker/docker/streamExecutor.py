@@ -98,7 +98,7 @@ class streamExecutor:
 
                     self.producer.send(container,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", msg.headers[0][1]), ("Output", msg.headers[1][1]),('workflow', workflow.encode('utf-8'))])
                 if("====== The End ======" in msg.value.decode("utf-8")):
-                    killHeader = eval(msg.headers[4][1].decode("utf-8"))
+                    killHeader = eval(msg.headers[3][1].decode("utf-8"))
                     if(killHeader[containerName][0] == 1 and killHeader[containerName][1] == False):
                         exit(0)
 
