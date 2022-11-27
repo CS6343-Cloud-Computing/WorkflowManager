@@ -453,7 +453,6 @@ func SendWork(m *Manager.Manager) {
 	}
 	if m.Pending.Len() > 0 {
 		nilWorkr := models.Worker{}
-		nilTask := models.Task{}
 		w := Scheduler.SelectWorker(m)
 		//if it returns no worker, return from the func
 		if w.ID == nilWorkr.ID {
@@ -476,11 +475,10 @@ func SendWork(m *Manager.Manager) {
 		//For persistance
 		//get the image name
 		image := taskUpdate.Image
-		//check if container with same image is Running
-		taskU := taskCntrl.GetTaskWithSameImage(image)
-		log.Println("container with same image found")
-		//check if stats of that worker fits criteria, then no need to send it to worker
-		if taskU.UUID != nilTask.UUID {
+		//check if containers with same image is Running
+		tasksU := taskCntrl.GetTasksWithSameImage(image)
+		log.Println("containers with same image found, ",tasksU)
+		for _,taskU := range tasksU {
 			validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
 			if validWorkerForPersistence {
 				taskUpdate.ContainerID = taskU.ContainerID
@@ -492,6 +490,28 @@ func SendWork(m *Manager.Manager) {
 				workerU.NumContainers = workerU.NumContainers + 1
 				wrkrCntrl.UpdateWorker(workerU)
 				return
+			}
+		}
+
+		//get running container with same image and count > 3
+		imageCntrl := Controller.NewEntry(m.DB)
+		imageCount, valid := imageCntrl.GetEntry(image)
+		if valid {
+			if imageCount.Count > 4 {
+				taskU := taskCntrl.GetLatestTaskWithImage(image)
+				validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
+				if validWorkerForPersistence {
+					log.Println("Persistance is possible in container: ", taskU.ContainerID)
+					taskUpdate.ContainerID = taskU.ContainerID
+					taskUpdate.State = "Running"
+					taskUpdate.WorkerIpPort = taskU.WorkerIpPort
+					taskCntrl.UpdateTask(taskUpdate)
+					//update num containers in worker
+					workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
+					workerU.NumContainers = workerU.NumContainers + 1
+					wrkrCntrl.UpdateWorker(workerU)
+					return
+				}
 			}
 		}
 

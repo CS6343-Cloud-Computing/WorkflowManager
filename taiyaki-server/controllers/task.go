@@ -72,13 +72,13 @@ func (repo *TaskRepo) GetRunningTasks() []models.Task {
 	return tasks
 }
 
-func (repo *TaskRepo) GetTaskWithSameImage(imageName string) models.Task {
-	var task models.Task
-	err := models.GetTaskWithSameImage(repo.Db, &task, imageName)
+func (repo *TaskRepo) GetTasksWithSameImage(imageName string) []models.Task {
+	var tasks []models.Task
+	err := models.GetTasksWithSameImage(repo.Db, &tasks, imageName)
 	if err != nil {
 		//panic(err)
 	}
-	return task
+	return tasks
 }
 
 func (repo *TaskRepo) GetOldestTaskForContainer(containerId string) models.Task {
@@ -115,4 +115,13 @@ func (repo *TaskRepo) UpdateTasksInWrkFlw(workflowId string) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func (repo *TaskRepo) GetLatestTaskWithImage(imageName string) models.Task {
+	var task models.Task
+	err := models.GetLatestTaskWithImage(repo.Db, &task, imageName)
+	if err != nil {
+		//panic(err)
+	}
+	return task
 }
