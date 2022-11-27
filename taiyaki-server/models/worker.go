@@ -14,6 +14,8 @@ type Worker struct {
 	Containers datatypes.JSON
 	Status     string
 	NumContainers	int
+	AvailMem		float64	
+	CPUusage		float64
 }
 
 // create a worker

@@ -76,6 +76,8 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 	//workrCntrl := Controller.NewWorker(db)
 	//workers := workrCntrl.GetWorkers()
 	workers := WorkerWithMinTasks(m)
+	db := m.DB
+	workrCntrl := Controller.NewWorker(db)
 	log.Println("WorkerWithMinTasks ", workers)
 	selectedWorker := models.Worker{}
 	cpuThreshold := 0.90
@@ -95,6 +97,9 @@ func SelectWorker(m *Manager.Manager) models.Worker {
 
 		availMem := MemAvailablePercent(respBody)
 		cpuUsage := CpuUsage(respBody)
+		worker.AvailMem = availMem
+		worker.CPUusage = cpuUsage
+		workrCntrl.UpdateWorker(worker)
 
 		log.Println("Stats for " + worker.WorkerIP)
 
