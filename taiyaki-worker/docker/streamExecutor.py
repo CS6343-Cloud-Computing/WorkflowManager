@@ -75,32 +75,36 @@ class streamExecutor:
                 res = self.messageQueue[workflow].GetList()
                 data = str([ele.value.decode("utf-8") for ele in res])
                 print(data)
-               
-                cmds = self.userCMD.split()
-                cmds.append(data)
-                userProcess = subprocess.Popen(cmds, stdout=subprocess.PIPE, text=True, universal_newlines=True)
+                terminate = False
+                processOutput = ""
+                if("====== The End ======" in data[0]):
+                    killHeader = eval(res[0].headers[3][1].decode("utf-8"))
+                    if(killHeader[containerName][0] == 1 and killHeader[containerName][1] == False):
+                        terminate = True
+                        processOutput = "====== The End ======"
+                else:
+                    cmds = self.userCMD.split()
+                    cmds.append(data)
+                    userProcess = subprocess.Popen(cmds, stdout=subprocess.PIPE, text=True, universal_newlines=True)
                                         
-                processOutput = str(userProcess.communicate()[0])
-                print(processOutput, end='')
+                    processOutput = str(userProcess.communicate()[0])
+                    print(processOutput, end='')
 
                 nextContainers = output[containerName]
-                
-                
-                msgID = msg.key.decode("utf-8").split("::")[2]
+
+                msgID = res[0].key.decode("utf-8").split("::")[2]
                 key = workflow+"::"+containerName+"::"+str(msgID)
                 for container in nextContainers:
                     print("sending to: ", container)
                     if container.startswith("__") and container.endswith("__"):
                         output = container.removesuffix("__")
                         output = output.removeprefix("__")
-                        self.producer.send(workflow+"-"+output,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", msg.headers[0][1]), ("Output", msg.headers[1][1]),('workflow', workflow.encode('utf-8'))])
+                        self.producer.send(workflow+"-"+output,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0)
                         continue
 
-                    self.producer.send(container,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", msg.headers[0][1]), ("Output", msg.headers[1][1]),('workflow', workflow.encode('utf-8'))])
-                if("====== The End ======" in msg.value.decode("utf-8")):
-                    killHeader = eval(msg.headers[3][1].decode("utf-8"))
-                    if(killHeader[containerName][0] == 1 and killHeader[containerName][1] == False):
-                        exit(0)
+                    self.producer.send(container,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", res[0].headers[0][1]), ("Output", res[0].headers[1][1]),('workflow', workflow.encode('utf-8'))])
+                if terminate:
+                    exit(0)
 
 if __name__ == "__main__":
     se = streamExecutor()
