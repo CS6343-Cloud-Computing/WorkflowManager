@@ -75,6 +75,7 @@ class streamExecutor:
                 res = self.messageQueue[workflow].GetList()
                 data = str([ele.value.decode("utf-8") for ele in res])
                 print(data)
+               
                 cmds = self.userCMD.split()
                 cmds.append(data)
                 userProcess = subprocess.Popen(cmds, stdout=subprocess.PIPE, text=True, universal_newlines=True)
@@ -96,7 +97,10 @@ class streamExecutor:
                         continue
 
                     self.producer.send(container,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", msg.headers[0][1]), ("Output", msg.headers[1][1]),('workflow', workflow.encode('utf-8'))])
-                # Otherwise call the user function and produce a next message
+                if("====== The End ======" in msg.value.encode("utf-8")):
+                    killHeader = eval(msg.headers[4][1].decode("utf-8"))
+                    if(killHeader[containerName][0] == 1 and killHeader[containerName][1] == False):
+                        exit(0)
 
 if __name__ == "__main__":
     se = streamExecutor()
