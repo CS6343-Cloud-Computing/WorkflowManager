@@ -15,6 +15,7 @@ const (
 	Completed
 	Running
 	Failed
+	KillBitReceived
 )
 
 type Config struct {

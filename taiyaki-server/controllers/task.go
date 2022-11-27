@@ -89,3 +89,30 @@ func (repo *TaskRepo) GetOldestTaskForContainer(containerId string) models.Task 
 	}
 	return task
 }
+
+func (repo *TaskRepo) GetCntnrIdFromWorkflowId(workflowId string) []string {
+	var containerIds []string
+	err := models.GetCntnrIdFromWorkflowId(repo.Db, &containerIds, workflowId)
+	if err != nil {
+		//panic(err)
+		log.Println("error in GetCntnrIdFromWorkflowId ", err)
+	}
+	return containerIds
+}
+
+func (repo *TaskRepo) GetCountImageInContainers(containerIds []string) []models.ContainerCount {
+	var containerIdCount []models.ContainerCount
+	err := models.GetCountImageInContainers(repo.Db, &containerIdCount, containerIds)
+	if err != nil {
+		//panic(err)
+		log.Println("Error in getting count image in containers")
+	}
+	return containerIdCount
+}
+
+func (repo *TaskRepo) UpdateTasksInWrkFlw(workflowId string) {
+	err := models.UpdateTasksInWrkFlw(repo.Db, workflowId)
+	if err != nil {
+		log.Println(err)
+	}
+}

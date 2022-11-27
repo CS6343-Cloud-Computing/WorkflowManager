@@ -11,6 +11,7 @@ specs:
         - name: "B"
       output:
         - name: "C"
+      persistence: false
     - name: "B"
       image: "uska image B"
       input:

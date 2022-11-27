@@ -71,6 +71,12 @@ type IOItem struct {
 	Name string
 }
 
+type CntnrCntPrstnce struct {
+	Container  string
+	Count      int
+	Peristance bool
+}
+
 func UnHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -85,11 +91,56 @@ func serverStatusHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func handler(w http.ResponseWriter, r *http.Request, m *Manager.Manager) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	defer r.Body.Close()
+	params := mux.Vars(r)
+	workflowId := params["workflowId"]
+	taskCntrl := Controller.NewTask(m.DB)
+	imageCntrl := Controller.NewEntry(m.DB)
+
+	log.Println("Received kill for workflow id for ",workflowId)
+
+	containerIds := taskCntrl.GetCntnrIdFromWorkflowId(workflowId)
+	containerIdCounts := taskCntrl.GetCountImageInContainers(containerIds)
+	
+	var images []string
+	for _, containerIdCount := range containerIdCounts {
+		images = append(images, containerIdCount.Image)
+	}
+
+	imageCounts := imageCntrl.GetImageCount(images)
+	
+	imageMapCount := make(map[string]bool)
+	for _, imageCount := range imageCounts {
+		if imageCount.Count > 3 {
+			imageMapCount[imageCount.Image] = true
+		} else {
+			imageMapCount[imageCount.Image] = false
+		}
+	}
+	
+	var cntnrCntPrstnces []CntnrCntPrstnce
+	for _,containerIdCount := range containerIdCounts {
+		var cntnrCntPrstnce CntnrCntPrstnce
+		cntnrCntPrstnce.Container = containerIdCount.ContainerId
+		cntnrCntPrstnce.Count = containerIdCount.Count
+		cntnrCntPrstnce.Peristance = imageMapCount[containerIdCount.Image]
+		cntnrCntPrstnces = append(cntnrCntPrstnces, cntnrCntPrstnce)
+	}
+	//update everything to received kill bit
+	taskCntrl.UpdateTasksInWrkFlw(workflowId)
+	//marshall the result and send it
+	json.NewEncoder(w).Encode(cntnrCntPrstnces)
+}
+
 func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controller.TaskRepo, workflowCntrl *Controller.WorkflowRepo, m *Manager.Manager) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	defer r.Body.Close()
 
+	imageCntrl := Controller.NewEntry(m.DB)
 	reqBytes, _ := ioutil.ReadAll(r.Body)
 
 	workflow := WorkflowTemplate{}
@@ -171,6 +222,17 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		taskOb.Config = *config
 
 		taskDb.Image = taskOb.Config.Image
+
+		imageCount, valid := imageCntrl.GetEntry(taskOb.Config.Image)
+
+		if !valid {
+			imageCount.Image = taskOb.Config.Image
+			imageCount.Count = 1
+			imageCntrl.CreateEntry(imageCount)
+		} else {
+			imageCount.Count = imageCount.Count + 1
+			imageCntrl.UpdateEntry(imageCount)
+		}
 
 		taskDb.Expiry = workflowDb.Expiry
 
@@ -346,6 +408,7 @@ func (c APIConfig) Start(wg *sync.WaitGroup, m *Manager.Manager) {
 	router.HandleFunc("/server", UnHandler)
 	router.HandleFunc("/workflow", UnHandler)
 	router.HandleFunc("/node", UnHandler)
+	router.HandleFunc("/workflow/terminate/{workflowId}", func(w http.ResponseWriter, r *http.Request) { handler(w, r, m) })
 	router.HandleFunc("/server/status", serverStatusHandler)
 	router.HandleFunc("/workflow/submit", func(w http.ResponseWriter, r *http.Request) { workflowHandler(w, r, taskCntrl, workflowCntrl, m) })
 	router.HandleFunc("/node/join", func(w http.ResponseWriter, r *http.Request) { nodeJoinHandler(w, r, workerCntrl, c) })
