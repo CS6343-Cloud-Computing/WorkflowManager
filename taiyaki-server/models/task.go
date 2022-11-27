@@ -117,7 +117,7 @@ func GetCntnrIdFromWorkflowId(db *gorm.DB, containerIds *[]string, workflowId st
 
 func GetCountImageInContainers(db *gorm.DB, containerIdCount *[]ContainerCount, containerIds []string) (err error) {
 
-	err = db.Raw("select container_id, image, COUNT(container_id) as count from tasks where state = \"Running\" and container_id in ? GROUP by container_id, image", containerIds).Scan(&containerIdCount).Error
+	err = db.Raw("select container_id, image, COUNT(container_id) as count from tasks where state in (\"Running\",\"Pending\",\"Scheduled\") and container_id in ? GROUP by container_id, image", containerIds).Scan(&containerIdCount).Error
 	if err != nil {
 		return err
 	}
