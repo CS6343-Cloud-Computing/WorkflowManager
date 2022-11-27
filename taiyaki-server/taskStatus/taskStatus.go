@@ -23,7 +23,7 @@ func UpdateTasks(m *Manager.Manager) {
 		for _, worker := range workers {
 			getTaskDetails(taskCntrl, workrCntrl, worker)
 		}
-		time.Sleep(6 * time.Second)
+		time.Sleep(15 * time.Second)
 	}
 
 }
@@ -54,7 +54,10 @@ func getTaskDetails(taskCntrl *Controller.TaskRepo, workCntrl *Controller.Worker
 				log.Println("valid in getTaskDetails", valid)
 				//panic(valid)
 			}
-			if(t.State == "Failed" || t.State == "Completed" || t.State == "KillBitReceived"){
+			if(t.State == "KillBitReceived" && (ta.State == 0 || ta.State == 1 || ta.State == 3)){
+				continue;
+			}
+			if(t.State == "Failed" || t.State == "Completed"){
 				continue;
 			}
 			switch ta.State {

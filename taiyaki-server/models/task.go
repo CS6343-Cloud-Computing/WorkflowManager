@@ -142,7 +142,7 @@ func GetPersistedTask(db *gorm.DB, tasks *[]Task, imageName string) (err error) 
 }
 
 func GetLatestTaskWithImage(db *gorm.DB, task *Task, imageName string) (err error) {
-	err = db.Where("image = ?", imageName).Last(&task).Error
+	err = db.Raw("select * from tasks where image = ? and state not in (\"Pending\",\"Scheduled\") order by created_at desc limit 1", imageName).Scan(&task).Error
 	if err != nil {
 		return err
 	}
