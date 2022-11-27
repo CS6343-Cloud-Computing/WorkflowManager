@@ -89,7 +89,7 @@ class streamExecutor:
                 key = workflow+"::"+containerName+"::"+str(msgID)
                 for container in nextContainers:
                     print("sending to: ", container)
-                    if container.startwiths("__") and container.endswith("__"):
+                    if container.startswith("__") and container.endswith("__"):
                         self.producer.send(workflow+"-output",  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", msg.headers[0][1]), ("Output", msg.headers[1][1]),('workflow', workflow.encode('utf-8'))])
                         continue
 

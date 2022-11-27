@@ -74,8 +74,8 @@ type IOItem struct {
 }
 
 type CntnrCntPrstnce struct {
-	Container  string
-	Count      int
+	Container   string
+	Count       int
 	Persistance bool
 }
 
@@ -102,18 +102,18 @@ func handler(w http.ResponseWriter, r *http.Request, m *Manager.Manager) {
 	taskCntrl := Controller.NewTask(m.DB)
 	imageCntrl := Controller.NewEntry(m.DB)
 
-	log.Println("Received kill for workflow id for ",workflowId)
+	log.Println("Received kill for workflow id for ", workflowId)
 
 	containerIds := taskCntrl.GetCntnrIdFromWorkflowId(workflowId)
 	containerIdCounts := taskCntrl.GetCountImageInContainers(containerIds)
-	
+
 	var images []string
 	for _, containerIdCount := range containerIdCounts {
 		images = append(images, containerIdCount.Image)
 	}
 
 	imageCounts := imageCntrl.GetImageCount(images)
-	
+
 	imageMapCount := make(map[string]bool)
 	for _, imageCount := range imageCounts {
 		if imageCount.Count > 3 {
@@ -122,9 +122,9 @@ func handler(w http.ResponseWriter, r *http.Request, m *Manager.Manager) {
 			imageMapCount[imageCount.Image] = false
 		}
 	}
-	
+
 	var cntnrCntPrstnces []CntnrCntPrstnce
-	for _,containerIdCount := range containerIdCounts {
+	for _, containerIdCount := range containerIdCounts {
 		var cntnrCntPrstnce CntnrCntPrstnce
 		cntnrCntPrstnce.Container = containerIdCount.ContainerId
 		cntnrCntPrstnce.Count = containerIdCount.Count
@@ -164,9 +164,12 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		datasources[dataSource.Name] = true
 	}
 
+	var outputs []string
+	outputs = append(outputs, "Successfully got the workflow with id: "+workflowId)
 	outputsinks := make(map[string]bool)
 	for _, outputSink := range workflow.Specs.Outputsinks {
 		outputsinks[outputSink.Name] = true
+		outputs = append(outputs, "http://10.176.128.170:9000/topics/"+workflowId+"-"+outputSink.Name)
 	}
 
 	nameToIndex := make(map[string]int)
@@ -312,8 +315,8 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 		return
 	}
 	fmt.Println("Successfully got and saved the workflow")
-	s := "Successfully got the workflow with id: " + workflowId + " .For output: http://10.176.128.170:9000/topics/" + workflowId + "-output"
-	resp := Resp{s, true, ""}
+
+	resp := Resp{strings.Join(outputs, "\n"), true, ""}
 	json.NewEncoder(w).Encode(resp)
 }
 
