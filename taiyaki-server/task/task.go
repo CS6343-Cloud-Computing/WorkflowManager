@@ -41,6 +41,7 @@ type Task struct {
 	FinishTime    time.Time
 	Config        Config
 	Indegree      int
+	Persistence   bool
 }
 
 type TaskEvent struct {
