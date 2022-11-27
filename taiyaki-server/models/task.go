@@ -91,8 +91,8 @@ func GetRunningTasks(db *gorm.DB, tasks *[]Task) (err error) {
 	return nil
 }
 
-func GetTaskWithSameImage(db *gorm.DB, task *Task, imageName string) (err error) {
-	err = db.Where("state = ? and image = ? ", "Running", imageName).First(task).Error
+func GetTasksWithSameImage(db *gorm.DB, tasks *[]Task, imageName string) (err error) {
+	err = db.Raw("select * from tasks where state = \"Running\" and image = ? ", imageName).Scan(&tasks).Error
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func GetCntnrIdFromWorkflowId(db *gorm.DB, containerIds *[]string, workflowId st
 
 func GetCountImageInContainers(db *gorm.DB, containerIdCount *[]ContainerCount, containerIds []string) (err error) {
 
-	err = db.Raw("select container_id, image, COUNT(container_id) as count from tasks where state = \"Running\" and container_id in ? GROUP by container_id, image", containerIds).Scan(&containerIdCount).Error
+	err = db.Raw("select container_id, image, COUNT(container_id) as count from tasks where state in (\"Running\",\"Pending\",\"Scheduled\") and container_id in ? GROUP by container_id, image", containerIds).Scan(&containerIdCount).Error
 	if err != nil {
 		return err
 	}
@@ -126,6 +126,23 @@ func GetCountImageInContainers(db *gorm.DB, containerIdCount *[]ContainerCount, 
 
 func UpdateTasksInWrkFlw(db *gorm.DB, workflowId string) (err error) {
 	err = db.Exec("update tasks set state = \"KillBitReceived\" where workflow_id = ?", workflowId).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//GetPersistedTask
+func GetPersistedTask(db *gorm.DB, tasks *[]Task, imageName string) (err error) {
+	err = db.Raw("select * from tasks where state = \"Running\" and image = ? ", imageName).Scan(&tasks).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetLatestTaskWithImage(db *gorm.DB, task *Task, imageName string) (err error) {
+	err = db.Where("image = ?", imageName).Last(&task).Error
 	if err != nil {
 		return err
 	}
