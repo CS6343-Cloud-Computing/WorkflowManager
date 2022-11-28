@@ -73,18 +73,19 @@ class streamExecutor:
             if self.messageQueue[workflow].IsReady():
                 print("inputs are ready: ", workflow)
                 res = self.messageQueue[workflow].GetList()
-                data = str([ele.value.decode("utf-8") for ele in res])
+                data = [ele.value.decode("utf-8") for ele in res]
                 print(data)
                 terminate = False
                 processOutput = ""
                 if("====== The End ======" in data[0]):
+                    print("GOT END MSG")
                     killHeader = eval(res[0].headers[3][1].decode("utf-8"))
                     if(killHeader[containerName][0] == 1 and killHeader[containerName][1] == False):
                         terminate = True
                         processOutput = "====== The End ======"
                 else:
                     cmds = self.userCMD.split()
-                    cmds.append(data)
+                    cmds.append(str(data))
                     userProcess = subprocess.Popen(cmds, stdout=subprocess.PIPE, text=True, universal_newlines=True)
                                         
                     processOutput = str(userProcess.communicate()[0])
