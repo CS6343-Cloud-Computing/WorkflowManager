@@ -103,7 +103,7 @@ class streamExecutor:
                         self.producer.send(workflow+"-"+output,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0)
                         continue
 
-                    self.producer.send(container,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=[("Input", res[0].headers[0][1]), ("Output", res[0].headers[1][1]),('workflow', workflow.encode('utf-8'))])
+                    self.producer.send(container,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=res.headers)
                 if terminate:
                     exit(0)
 
