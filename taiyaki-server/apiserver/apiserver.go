@@ -19,6 +19,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+
+	//"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 	"gorm.io/datatypes"
 	//"gorm.io/gorm"
@@ -454,61 +456,37 @@ func SendWork(m *Manager.Manager) {
 		log.Println("No worker is present")
 		return
 	}
-	if m.Pending.Len() > 0 {
-		nilWorkr := models.Worker{}
-		w := Scheduler.SelectWorker(m)
-		//if it returns no worker, return from the func
-		if w.ID == nilWorkr.ID {
-			return
-		}
-		e := m.Pending.Dequeue()
-		te := e.(task.TaskEvent)
-
-		log.Printf("Pulled %v off pending queue", te.Task)
-
-		m.EventDb[te.ID] = &te
-
-		te.Task.State = task.Scheduled
-		taskCntrl := Controller.NewTask(m.DB)
-		taskUpdate, _ := taskCntrl.GetTask(te.Task.ID.String())
-		taskUpdate.State = "Scheduled"
-
-		wrkrCntrl := Controller.NewWorker(m.DB)
-
-		//For persistance
-		//get the image name
-		image := taskUpdate.Image
-		//check if containers with same image is Running
-		tasksU := taskCntrl.GetTasksWithSameImage(image)
-		log.Println("containers with same image found, ",tasksU)
-		for _,taskU := range tasksU {
-			validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
-			if validWorkerForPersistence {
-				taskUpdate.ContainerID = taskU.ContainerID
-				taskUpdate.State = "Running"
-				taskUpdate.WorkerIpPort = taskU.WorkerIpPort
-				taskCntrl.UpdateTask(taskUpdate)
-				//update num containers in worker
-				workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
-				workerU.NumContainers = workerU.NumContainers + 1
-				wrkrCntrl.UpdateWorker(workerU)
+	for {
+		if m.Pending.Len() > 0 {
+			nilWorkr := models.Worker{}
+			w := Scheduler.SelectWorker(m)
+			//if it returns no worker, return from the func
+			if w.ID == nilWorkr.ID {
 				return
 			}
-		}
+			e := m.Pending.Dequeue()
+			te := e.(task.TaskEvent)
 
-		//get running container with same image and count > 3
-		log.Println("containers with same image in running state not found ")
-		imageCntrl := Controller.NewEntry(m.DB)
-		imageCount, valid := imageCntrl.GetEntry(image)
-		if valid {
-			if imageCount.Count > 4 {
-				log.Println("image count is greater than 4. Trying to deploy in same container which is persisted ")
-				taskU := taskCntrl.GetLatestTaskWithImage(image)
-				log.Println("Got latest worker with same image deployed ", taskU)
+			log.Printf("Pulled %v off pending queue", te.Task)
+
+			m.EventDb[te.ID] = &te
+
+			te.Task.State = task.Scheduled
+			taskCntrl := Controller.NewTask(m.DB)
+			taskUpdate, _ := taskCntrl.GetTask(te.Task.ID.String())
+			taskUpdate.State = "Scheduled"
+
+			wrkrCntrl := Controller.NewWorker(m.DB)
+
+			//For persistance
+			//get the image name
+			image := taskUpdate.Image
+			//check if containers with same image is Running
+			tasksU := taskCntrl.GetTasksWithSameImage(image)
+			log.Println("containers with same image found, ", tasksU)
+			for _, taskU := range tasksU {
 				validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
-				log.Println("Got latest worker with same image deployed and is valid ",validWorkerForPersistence)
 				if validWorkerForPersistence {
-					log.Println("Persistance is possible in container: ", taskU.ContainerID)
 					taskUpdate.ContainerID = taskU.ContainerID
 					taskUpdate.State = "Running"
 					taskUpdate.WorkerIpPort = taskU.WorkerIpPort
@@ -520,52 +498,79 @@ func SendWork(m *Manager.Manager) {
 					return
 				}
 			}
+
+			//get running container with same image and count > 3
+			log.Println("containers with same image in running state not found ")
+			imageCntrl := Controller.NewEntry(m.DB)
+			imageCount, valid := imageCntrl.GetEntry(image)
+			if valid {
+				if imageCount.Count > 4 {
+					log.Println("image count is greater than 4. Trying to deploy in same container which is persisted ")
+					taskU := taskCntrl.GetLatestTaskWithImage(image)
+					log.Println("Got latest worker with same image deployed ", taskU)
+					validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
+					log.Println("Got latest worker with same image deployed and is valid ", validWorkerForPersistence)
+					if validWorkerForPersistence {
+						log.Println("Persistance is possible in container: ", taskU.ContainerID)
+						taskUpdate.ContainerID = taskU.ContainerID
+						taskUpdate.State = "Running"
+						taskUpdate.WorkerIpPort = taskU.WorkerIpPort
+						taskCntrl.UpdateTask(taskUpdate)
+						//update num containers in worker
+						workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
+						workerU.NumContainers = workerU.NumContainers + 1
+						wrkrCntrl.UpdateWorker(workerU)
+						return
+					}
+				}
+			}
+
+			data, err := json.Marshal(te)
+			if err != nil {
+				log.Printf("Unable to marshal task object: %v.", te.Task)
+			}
+
+			workerIpPort := w.WorkerIP + ":" + w.WorkerPort
+			fmt.Println("Sending to a work", workerIpPort)
+			url := fmt.Sprintf("http://%s/tasks", workerIpPort)
+			resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+			if err != nil {
+				log.Printf("Error connecting to %v: %v", w, err)
+				m.Pending.Enqueue(te.Task)
+				return
+			}
+
+			d := json.NewDecoder(resp.Body)
+			if resp.StatusCode != http.StatusCreated {
+				fmt.Println(d)
+				// e := .ErrResponse{}
+				// err := d.Decode(&e)
+				// if err != nil {
+				// 	fmt.Printf("Error decoding response: %s\n", err.Error())
+				// 	return
+				// }
+				//log.Printf("Response error (%d): %s", e.HTTPStatusCode, e.Message)
+				return
+			}
+
+			w.NumContainers = w.NumContainers + 1
+			wrkrCntrl.UpdateWorker(w)
+
+			taskUpdate.WorkerIpPort = workerIpPort
+			taskCntrl.UpdateTask(taskUpdate)
+
+			t := task.Task{}
+
+			err = d.Decode(&t)
+			if err != nil {
+				fmt.Printf("Error decoding response: %s\n", err.Error())
+				return
+			}
+			log.Printf("%#v\n", t)
+		} else {
+			log.Println("No work in the queue")
+			break;
 		}
-
-		data, err := json.Marshal(te)
-		if err != nil {
-			log.Printf("Unable to marshal task object: %v.", te.Task)
-		}
-
-		workerIpPort := w.WorkerIP + ":" + w.WorkerPort
-		fmt.Println("Sending to a work", workerIpPort)
-		url := fmt.Sprintf("http://%s/tasks", workerIpPort)
-		resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
-		if err != nil {
-			log.Printf("Error connecting to %v: %v", w, err)
-			m.Pending.Enqueue(te.Task)
-			return
-		}
-
-		d := json.NewDecoder(resp.Body)
-		if resp.StatusCode != http.StatusCreated {
-			fmt.Println(d)
-			// e := .ErrResponse{}
-			// err := d.Decode(&e)
-			// if err != nil {
-			// 	fmt.Printf("Error decoding response: %s\n", err.Error())
-			// 	return
-			// }
-			//log.Printf("Response error (%d): %s", e.HTTPStatusCode, e.Message)
-			return
-		}
-
-		w.NumContainers = w.NumContainers + 1
-		wrkrCntrl.UpdateWorker(w)
-
-		taskUpdate.WorkerIpPort = workerIpPort
-		taskCntrl.UpdateTask(taskUpdate)
-
-		t := task.Task{}
-
-		err = d.Decode(&t)
-		if err != nil {
-			fmt.Printf("Error decoding response: %s\n", err.Error())
-			return
-		}
-		log.Printf("%#v\n", t)
-	} else {
-		log.Println("No work in the queue")
 	}
 }
 
