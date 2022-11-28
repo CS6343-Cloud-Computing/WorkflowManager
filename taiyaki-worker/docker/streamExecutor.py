@@ -5,6 +5,7 @@ import os
 import subprocess
 from collections import defaultdict
 import queue
+import time
 
 class MultiQueue:
     def __init__(self):
@@ -97,14 +98,16 @@ class streamExecutor:
                 key = workflow+"::"+containerName+"::"+str(msgID)
                 for container in nextContainers:
                     print("sending to: ", container)
+                    print(processOutput.encode('utf-8'))
                     if container.startswith("__") and container.endswith("__"):
                         output = container.removesuffix("__")
                         output = output.removeprefix("__")
                         self.producer.send(workflow+"-"+output,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0)
                         continue
-
+                    
                     self.producer.send(container,  key = key.encode("utf-8"),  value = processOutput.encode('utf-8'),partition=0, headers=res[0].headers)
                 if terminate:
+                    time.sleep(5)
                     exit(0)
 
 if __name__ == "__main__":
