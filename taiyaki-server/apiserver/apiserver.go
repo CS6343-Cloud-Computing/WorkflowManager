@@ -171,7 +171,7 @@ func workflowHandler(w http.ResponseWriter, r *http.Request, taskCntrl *Controll
 	outputsinks := make(map[string]bool)
 	for _, outputSink := range workflow.Specs.Outputsinks {
 		outputsinks[outputSink.Name] = true
-		outputs = append(outputs, "http://10.176.128.170:9000/topics/"+workflowId+"-"+outputSink.Name)
+		outputs = append(outputs, "http://10.176.128.170:9000/topic/"+workflowId+"-"+outputSink.Name)
 	}
 
 	nameToIndex := make(map[string]int)
@@ -569,7 +569,7 @@ func SendWork(m *Manager.Manager) {
 			log.Printf("%#v\n", t)
 		} else {
 			log.Println("No work in the queue")
-			break;
+			break
 		}
 	}
 }
