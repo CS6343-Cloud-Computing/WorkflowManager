@@ -490,7 +490,9 @@ func SendWork(m *Manager.Manager) {
 					taskUpdate.ContainerID = taskU.ContainerID
 					taskUpdate.State = "Running"
 					taskUpdate.WorkerIpPort = taskU.WorkerIpPort
+					taskUpdate.Persistence = true
 					taskCntrl.UpdateTask(taskUpdate)
+					taskU.Persistence = true
 					//update num containers in worker
 					workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
 					workerU.NumContainers = workerU.NumContainers + 1
@@ -507,6 +509,8 @@ func SendWork(m *Manager.Manager) {
 				if imageCount.Count > 4 {
 					log.Println("image count is greater than 4. Trying to deploy in same container which is persisted ")
 					taskU := taskCntrl.GetLatestTaskWithImage(image)
+					taskU.Persistence = true
+					taskCntrl.UpdateTask(taskU)
 					log.Println("Got latest worker with same image deployed ", taskU)
 					validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
 					log.Println("Got latest worker with same image deployed and is valid ", validWorkerForPersistence)
@@ -515,6 +519,7 @@ func SendWork(m *Manager.Manager) {
 						taskUpdate.ContainerID = taskU.ContainerID
 						taskUpdate.State = "Running"
 						taskUpdate.WorkerIpPort = taskU.WorkerIpPort
+						taskUpdate.Persistence = true
 						taskCntrl.UpdateTask(taskUpdate)
 						//update num containers in worker
 						workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
