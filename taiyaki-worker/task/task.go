@@ -194,18 +194,33 @@ func (d *Docker) Run() DockerResult {
 		PublishAllPorts: true,
 	}
 
+	f, err := os.OpenFile("logfile.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
+	timeStart := time.Now()
+	log.Println("Docker create start time: ",timeStart, d.Task.ContainerId)
 	resp, err := d.Client.ContainerCreate(ctx, &cc, &hc, nil, nil, d.Task.ContainerId)
 	if err != nil {
 		log.Printf("Error creating container using image %s: %v \n", d.Task.Config.Image, err)
 		return DockerResult{Error: err}
 	}
+	timeEnd := time.Now()
+	log.Println("Docker create end time: ",timeEnd, d.Task.ContainerId)
 
+	timeStart = time.Now()
+	log.Println("Docker Start start time: ",timeStart, d.Task.ContainerId)
 	err2 := d.Client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 	if err2 != nil {
 		log.Printf("Error starting container using image %s: %v \n", resp.ID, err2)
 		return DockerResult{Error: err}
 	}
-
+	timeEnd = time.Now()
+	log.Println("Docker start end time: ",timeEnd, d.Task.ContainerId)
+	log.SetOutput(log.Default().Writer())
 	fmt.Println("-------------------------container created with id " + resp.ID)
 	d.ContainerId = resp.ID
 	out, err := d.Client.ContainerLogs(ctx, resp.ID,

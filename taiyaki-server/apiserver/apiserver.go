@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	Controller "taiyaki-server/controllers"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 
 	//"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
@@ -478,49 +480,28 @@ func SendWork(m *Manager.Manager) {
 
 			wrkrCntrl := Controller.NewWorker(m.DB)
 
-			//For persistance
-			//get the image name
-			image := taskUpdate.Image
-			//check if containers with same image is Running
-			tasksU := taskCntrl.GetTasksWithSameImage(image)
-			log.Println("containers with same image found, ", tasksU)
-			for _, taskU := range tasksU {
-				validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
-				if validWorkerForPersistence {
-					taskUpdate.ContainerID = taskU.ContainerID
-					taskUpdate.State = "Running"
-					taskUpdate.WorkerIpPort = taskU.WorkerIpPort
-					taskUpdate.Persistence = true
-					taskCntrl.UpdateTask(taskUpdate)
-					taskU.Persistence = true
-					//update num containers in worker
-					workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
-					workerU.NumContainers = workerU.NumContainers + 1
-					wrkrCntrl.UpdateWorker(workerU)
-					return
-				}
+			err := godotenv.Load()
+			if err != nil {
+				log.Fatal("Error loading .env file")
 			}
-
-			//get running container with same image and count > 3
-			log.Println("containers with same image in running state not found ")
-			imageCntrl := Controller.NewEntry(m.DB)
-			imageCount, valid := imageCntrl.GetEntry(image)
-			if valid {
-				if imageCount.Count > 4 {
-					log.Println("image count is greater than 4. Trying to deploy in same container which is persisted ")
-					taskU := taskCntrl.GetLatestTaskWithImage(image)
-					taskU.Persistence = true
-					taskCntrl.UpdateTask(taskU)
-					log.Println("Got latest worker with same image deployed ", taskU)
+			persistanceBool := os.Getenv("PERSISTENCE")
+			log.Println("Persistence is : ",persistanceBool)
+			if persistanceBool == "ON" {
+				//For persistance
+				//get the image name
+				image := taskUpdate.Image
+				//check if containers with same image is Running
+				tasksU := taskCntrl.GetTasksWithSameImage(image)
+				log.Println("containers with same image found, ", tasksU)
+				for _, taskU := range tasksU {
 					validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
-					log.Println("Got latest worker with same image deployed and is valid ", validWorkerForPersistence)
 					if validWorkerForPersistence {
-						log.Println("Persistance is possible in container: ", taskU.ContainerID)
 						taskUpdate.ContainerID = taskU.ContainerID
 						taskUpdate.State = "Running"
 						taskUpdate.WorkerIpPort = taskU.WorkerIpPort
 						taskUpdate.Persistence = true
 						taskCntrl.UpdateTask(taskUpdate)
+						taskU.Persistence = true
 						//update num containers in worker
 						workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
 						workerU.NumContainers = workerU.NumContainers + 1
@@ -528,8 +509,36 @@ func SendWork(m *Manager.Manager) {
 						return
 					}
 				}
-			}
 
+				//get running container with same image and count > 3
+				log.Println("containers with same image in running state not found ")
+				imageCntrl := Controller.NewEntry(m.DB)
+				imageCount, valid := imageCntrl.GetEntry(image)
+				if valid {
+					if imageCount.Count > 4 {
+						log.Println("image count is greater than 4. Trying to deploy in same container which is persisted ")
+						taskU := taskCntrl.GetLatestTaskWithImage(image)
+						taskU.Persistence = true
+						taskCntrl.UpdateTask(taskU)
+						log.Println("Got latest worker with same image deployed ", taskU)
+						validWorkerForPersistence := Scheduler.CheckStatsInWorker(taskU.WorkerIpPort)
+						log.Println("Got latest worker with same image deployed and is valid ", validWorkerForPersistence)
+						if validWorkerForPersistence {
+							log.Println("Persistance is possible in container: ", taskU.ContainerID)
+							taskUpdate.ContainerID = taskU.ContainerID
+							taskUpdate.State = "Running"
+							taskUpdate.WorkerIpPort = taskU.WorkerIpPort
+							taskUpdate.Persistence = true
+							taskCntrl.UpdateTask(taskUpdate)
+							//update num containers in worker
+							workerU, _ := wrkrCntrl.GetWorker(strings.Split(taskU.WorkerIpPort, ":")[0])
+							workerU.NumContainers = workerU.NumContainers + 1
+							wrkrCntrl.UpdateWorker(workerU)
+							return
+						}
+					}
+				}
+			}
 			data, err := json.Marshal(te)
 			if err != nil {
 				log.Printf("Unable to marshal task object: %v.", te.Task)

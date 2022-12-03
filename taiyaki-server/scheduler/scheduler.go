@@ -89,18 +89,26 @@ func CheckStatsInWorker(workerIp_port string) bool {
 }
 
 func SelectWorker(m *Manager.Manager) models.Worker {
-	//db := m.DB
-	//workrCntrl := Controller.NewWorker(db)
-	//workers := workrCntrl.GetWorkers()
-	workers := WorkerWithMinTasks(m)
-	db := m.DB
-	workrCntrl := Controller.NewWorker(db)
-	log.Println("WorkerWithMinTasks ", workers)
-	selectedWorker := models.Worker{}
+	
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+	scheduler := os.Getenv("SCHEDULER")
+
+	workers := []models.Worker{}
+	log.Println("Scheduler is ",scheduler)
+	if(scheduler == "RANDOM"){
+		db := m.DB
+		workrCntrl := Controller.NewWorker(db)
+		workers = workrCntrl.GetWorkers()
+	}else{
+		workers = WorkerWithMinTasks(m)
+	}
+	db := m.DB
+	workrCntrl := Controller.NewWorker(db)
+	log.Println("WorkerWithMinTasks ", workers)
+	selectedWorker := models.Worker{}
 	cpuThreshold, err := strconv.ParseFloat(os.Getenv("CPU_THRESHOLD"), 64); 
 	if err!= nil {
 		log.Println("Error getting cpuThreshold")
